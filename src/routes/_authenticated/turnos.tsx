@@ -1,0 +1,174 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/hotel/PageHeader";
+import { EmptyState } from "@/components/hotel/EmptyState";
+import { AreaBadge } from "@/components/hotel/Badges";
+import { useSesion } from "@/hooks/use-sesion";
+import { crearTurno, firmarTurno, listarTurnos } from "@/lib/hotel.functions";
+import { turnoCrearSchema } from "@/lib/hotel.schemas";
+
+export const Route = createFileRoute("/_authenticated/turnos")({
+  head: () => ({
+    meta: [
+      { title: "Entrega de turno · Palacio Aurum" },
+      { name: "description", content: "Entrega digital de turno con pendientes, VIPs, incidencias abiertas y firma de recepción." },
+      { property: "og:title", content: "Entrega de turno · Palacio Aurum" },
+      { property: "og:description", content: "Handover digital firmado entre turnos del hotel." },
+    ],
+  }),
+  component: Turnos,
+});
+
+function Turnos() {
+  const { sesion } = useSesion();
+  const qc = useQueryClient();
+  const listar = useServerFn(listarTurnos);
+  const crear = useServerFn(crearTurno);
+  const firmar = useServerFn(firmarTurno);
+  const [form, setForm] = useState({
+    area_id: "",
+    turno: "Matutino",
+    pendientes: "",
+    vips: "",
+    incidencias_abiertas: "",
+    notas: "",
+    firma_entrega: "",
+  });
+  const [firmas, setFirmas] = useState<Record<string, string>>({});
+
+  const { data = [] } = useQuery({ queryKey: ["turnos"], queryFn: () => listar() });
+
+  const mCrear = useMutation({
+    mutationFn: (input: unknown) => crear({ data: input as never }),
+    onSuccess: () => {
+      toast.success("Turno entregado");
+      setForm({ area_id: "", turno: "Matutino", pendientes: "", vips: "", incidencias_abiertas: "", notas: "", firma_entrega: "" });
+      qc.invalidateQueries({ queryKey: ["turnos"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const mFirmar = useMutation({
+    mutationFn: (input: { id: string; firma_recepcion: string }) => firmar({ data: input as never }),
+    onSuccess: () => {
+      toast.success("Turno recibido y firmado");
+      qc.invalidateQueries({ queryKey: ["turnos"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = turnoCrearSchema.safeParse({
+      ...form,
+      area_id: form.area_id || null,
+      pendientes: form.pendientes || undefined,
+      vips: form.vips || undefined,
+      incidencias_abiertas: form.incidencias_abiertas || undefined,
+      notas: form.notas || undefined,
+      firma_entrega: form.firma_entrega || undefined,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Datos inválidos");
+      return;
+    }
+    mCrear.mutate(parsed.data);
+  }
+
+  return (
+    <div>
+      <PageHeader titulo="Entrega de turno" descripcion="Bitácora digital con firma de entrega y recepción." />
+
+      <form onSubmit={enviar} className="surface mb-8 grid gap-3 p-5 md:grid-cols-2">
+        <select className="field" value={form.area_id} onChange={(e) => setForm({ ...form, area_id: e.target.value })}>
+          <option value="">Área</option>
+          {(sesion?.areas ?? []).map((a) => (
+            <option key={a.id} value={a.id}>{a.nombre}</option>
+          ))}
+        </select>
+        <select className="field" value={form.turno} onChange={(e) => setForm({ ...form, turno: e.target.value })}>
+          {["Matutino", "Vespertino", "Nocturno"].map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        <textarea className="field" rows={3} placeholder="Pendientes del turno" value={form.pendientes} onChange={(e) => setForm({ ...form, pendientes: e.target.value })} maxLength={2000} />
+        <textarea className="field" rows={3} placeholder="VIPs y atenciones especiales" value={form.vips} onChange={(e) => setForm({ ...form, vips: e.target.value })} maxLength={2000} />
+        <textarea className="field" rows={3} placeholder="Incidencias abiertas" value={form.incidencias_abiertas} onChange={(e) => setForm({ ...form, incidencias_abiertas: e.target.value })} maxLength={2000} />
+        <textarea className="field" rows={3} placeholder="Notas adicionales" value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} maxLength={2000} />
+        <input className="field" placeholder="Firma de quien entrega (nombre completo)" value={form.firma_entrega} onChange={(e) => setForm({ ...form, firma_entrega: e.target.value })} maxLength={120} />
+        <button className="btn-gold hover:btn-gold-hover px-4 py-2 text-sm" disabled={mCrear.isPending}>
+          {mCrear.isPending ? "Guardando…" : "Entregar turno"}
+        </button>
+      </form>
+
+      {data.length === 0 ? (
+        <EmptyState titulo="Sin entregas registradas" descripcion="Las entregas de turno aparecerán aquí en orden cronológico." />
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {data.map((t) => (
+            <article key={t.id} className="surface p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-display text-xl">{t.turno}</h2>
+                <AreaBadge nombre={t.areas?.nombre ?? null} />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {new Date(t.created_at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}
+              </p>
+              <dl className="mt-4 space-y-3 text-sm">
+                {[
+                  ["Pendientes", t.pendientes],
+                  ["VIPs", t.vips],
+                  ["Incidencias abiertas", t.incidencias_abiertas],
+                  ["Notas", t.notas],
+                ].map(([k, v]) =>
+                  v ? (
+                    <div key={k as string}>
+                      <dt className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{k}</dt>
+                      <dd className="whitespace-pre-line">{v}</dd>
+                    </div>
+                  ) : null,
+                )}
+              </dl>
+              <div className="mt-4 border-t border-border pt-4 text-sm">
+                <p className="text-xs text-muted-foreground">Entrega: {t.firma_entrega ?? "—"}</p>
+                {t.firma_recepcion ? (
+                  <p className="mt-1 text-xs text-success">
+                    Recibido por {t.firma_recepcion} ·{" "}
+                    {new Date(t.updated_at).toLocaleString("es-MX")}
+                  </p>
+                ) : (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      className="field flex-1 py-1 text-xs"
+                      placeholder="Tu nombre para firmar recepción"
+                      value={firmas[t.id] ?? ""}
+                      onChange={(e) => setFirmas({ ...firmas, [t.id]: e.target.value })}
+                      maxLength={120}
+                    />
+                    <button
+                      type="button"
+                      className="btn-gold hover:btn-gold-hover px-3 py-1 text-xs"
+                      onClick={() => {
+                        const firma = (firmas[t.id] ?? "").trim();
+                        if (firma.length < 2) {
+                          toast.error("Escribe tu nombre para firmar");
+                          return;
+                        }
+                        mFirmar.mutate({ id: t.id, firma_recepcion: firma });
+                      }}
+                    >
+                      Firmar
+                    </button>
+                  </div>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
