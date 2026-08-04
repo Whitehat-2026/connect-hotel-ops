@@ -17,6 +17,7 @@ import { Route as AuthenticatedComunicadosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedIncidenciasRouteImport } from './routes/_authenticated/incidencias'
 import { Route as AuthenticatedTurnosRouteImport } from './routes/_authenticated/turnos'
+import { Route as AuthenticatedVipRouteImport } from './routes/_authenticated/vip'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,6 +60,11 @@ const AuthenticatedTurnosRoute = AuthenticatedTurnosRouteImport.update({
   path: '/turnos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedVipRoute = AuthenticatedVipRouteImport.update({
+  id: '/vip',
+  path: '/vip',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/incidencias': typeof AuthenticatedIncidenciasRoute
   '/turnos': typeof AuthenticatedTurnosRoute
+  '/vip': typeof AuthenticatedVipRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/incidencias': typeof AuthenticatedIncidenciasRoute
   '/turnos': typeof AuthenticatedTurnosRoute
+  '/vip': typeof AuthenticatedVipRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/incidencias': typeof AuthenticatedIncidenciasRoute
   '/_authenticated/turnos': typeof AuthenticatedTurnosRoute
+  '/_authenticated/vip': typeof AuthenticatedVipRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/incidencias'
     | '/turnos'
+    | '/vip'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/incidencias'
     | '/turnos'
+    | '/vip'
   id:
     | '__root__'
     | '/'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/incidencias'
     | '/_authenticated/turnos'
+    | '/_authenticated/vip'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -185,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTurnosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/vip': {
+      id: '/_authenticated/vip'
+      path: '/vip'
+      fullPath: '/vip'
+      preLoaderRoute: typeof AuthenticatedVipRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -193,6 +212,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedIncidenciasRoute: typeof AuthenticatedIncidenciasRoute
   AuthenticatedTurnosRoute: typeof AuthenticatedTurnosRoute
+  AuthenticatedVipRoute: typeof AuthenticatedVipRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -200,6 +220,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedIncidenciasRoute: AuthenticatedIncidenciasRoute,
   AuthenticatedTurnosRoute: AuthenticatedTurnosRoute,
+  AuthenticatedVipRoute: AuthenticatedVipRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
