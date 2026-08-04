@@ -136,8 +136,8 @@ function Turnos() {
                 <p className="text-xs text-muted-foreground">Entrega: {t.firma_entrega ?? "—"}</p>
                 {t.firma_recepcion ? (
                   <p className="mt-1 text-xs text-success">
-                    Recibido por {t.firma_recepcion}
-                    {t.firmado_at ? ` · ${new Date(t.firmado_at).toLocaleString("es-MX")}` : ""}
+                    Recibido por {t.firma_recepcion} ·{" "}
+                    {new Date(t.updated_at).toLocaleString("es-MX")}
                   </p>
                 ) : (
                   <div className="mt-2 flex gap-2">
