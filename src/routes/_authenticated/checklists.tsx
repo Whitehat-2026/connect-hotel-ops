@@ -47,11 +47,11 @@ function Checklists() {
             return (
               <article key={c.id} className="surface p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="font-display text-xl">{c.titulo}</h2>
+                  <h2 className="font-display text-xl">{c.nombre}</h2>
                   <AreaBadge nombre={c.areas?.nombre ?? null} />
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {c.turno ?? "Todo el día"} · {new Date(c.fecha).toLocaleDateString("es-MX")}
+                  {c.turno} · {new Date(c.fecha).toLocaleDateString("es-MX")}
                 </p>
                 <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                   <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
