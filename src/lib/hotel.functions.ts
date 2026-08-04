@@ -15,6 +15,7 @@ import {
   usuarioActivoSchema,
   vipCrearSchema,
 } from "./hotel.schemas";
+import { limpiar } from "./hotel.server";
 
 /** Sesión: perfil, roles y catálogo de áreas. */
 export const obtenerSesion = createServerFn({ method: "GET" })
@@ -52,7 +53,7 @@ export const crearIncidencia = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("incidents")
-      .insert({ ...data, created_by: context.userId });
+      .insert(limpiar({ ...data, created_by: context.userId }));
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -66,7 +67,7 @@ export const actualizarIncidencia = createServerFn({ method: "POST" })
     if (cambios.estado === "en_proceso") patch["primera_respuesta_at"] = new Date().toISOString();
     if (cambios.estado === "resuelta" || cambios.estado === "cerrada")
       patch["resuelta_at"] = new Date().toISOString();
-    const { error } = await context.supabase.from("incidents").update(patch).eq("id", id);
+    const { error } = await context.supabase.from("incidents").update(limpiar(patch)).eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -89,7 +90,7 @@ export const crearTurno = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("shift_handovers")
-      .insert({ ...data, created_by: context.userId, entregado_por: context.userId });
+      .insert(limpiar({ ...data, created_by: context.userId, entregado_por: context.userId }));
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -130,7 +131,7 @@ export const crearComunicado = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("announcements")
-      .insert({ ...data, created_by: context.userId });
+      .insert(limpiar({ ...data, created_by: context.userId }));
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -166,7 +167,7 @@ export const crearVip = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("vip_alerts")
-      .insert({ ...data, created_by: context.userId });
+      .insert(limpiar({ ...data, created_by: context.userId }));
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -215,7 +216,7 @@ export const crearPedido = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("internal_requests")
-      .insert({ ...data, created_by: context.userId });
+      .insert(limpiar({ ...data, created_by: context.userId }));
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -229,7 +230,7 @@ export const cambiarEstadoPedido = createServerFn({ method: "POST" })
       patch["aprobado_por"] = context.userId;
     const { error } = await context.supabase
       .from("internal_requests")
-      .update(patch)
+      .update(limpiar(patch))
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -281,7 +282,7 @@ export const crearArea = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => areaCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("areas").insert(data);
+    const { error } = await context.supabase.from("areas").insert(limpiar(data));
     if (error) throw new Error(error.message);
     return { ok: true };
   });
