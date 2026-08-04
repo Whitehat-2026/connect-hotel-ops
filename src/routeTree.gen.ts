@@ -16,6 +16,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedChecklistsRouteImport } from './routes/_authenticated/checklists'
 import { Route as AuthenticatedComunicadosRouteImport } from './routes/_authenticated/comunicados'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedEstrategiaRouteImport } from './routes/_authenticated/estrategia'
 import { Route as AuthenticatedIncidenciasRouteImport } from './routes/_authenticated/incidencias'
 import { Route as AuthenticatedPedidosRouteImport } from './routes/_authenticated/pedidos'
 import { Route as AuthenticatedTurnosRouteImport } from './routes/_authenticated/turnos'
@@ -56,6 +57,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEstrategiaRoute = AuthenticatedEstrategiaRouteImport.update({
+  id: '/estrategia',
+  path: '/estrategia',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedIncidenciasRoute =
   AuthenticatedIncidenciasRouteImport.update({
     id: '/incidencias',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/checklists': typeof AuthenticatedChecklistsRoute
   '/comunicados': typeof AuthenticatedComunicadosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/estrategia': typeof AuthenticatedEstrategiaRoute
   '/incidencias': typeof AuthenticatedIncidenciasRoute
   '/pedidos': typeof AuthenticatedPedidosRoute
   '/turnos': typeof AuthenticatedTurnosRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/checklists': typeof AuthenticatedChecklistsRoute
   '/comunicados': typeof AuthenticatedComunicadosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/estrategia': typeof AuthenticatedEstrategiaRoute
   '/incidencias': typeof AuthenticatedIncidenciasRoute
   '/pedidos': typeof AuthenticatedPedidosRoute
   '/turnos': typeof AuthenticatedTurnosRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_authenticated/checklists': typeof AuthenticatedChecklistsRoute
   '/_authenticated/comunicados': typeof AuthenticatedComunicadosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/estrategia': typeof AuthenticatedEstrategiaRoute
   '/_authenticated/incidencias': typeof AuthenticatedIncidenciasRoute
   '/_authenticated/pedidos': typeof AuthenticatedPedidosRoute
   '/_authenticated/turnos': typeof AuthenticatedTurnosRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/checklists'
     | '/comunicados'
     | '/dashboard'
+    | '/estrategia'
     | '/incidencias'
     | '/pedidos'
     | '/turnos'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/checklists'
     | '/comunicados'
     | '/dashboard'
+    | '/estrategia'
     | '/incidencias'
     | '/pedidos'
     | '/turnos'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated/checklists'
     | '/_authenticated/comunicados'
     | '/_authenticated/dashboard'
+    | '/_authenticated/estrategia'
     | '/_authenticated/incidencias'
     | '/_authenticated/pedidos'
     | '/_authenticated/turnos'
@@ -214,6 +226,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/estrategia': {
+      id: '/_authenticated/estrategia'
+      path: '/estrategia'
+      fullPath: '/estrategia'
+      preLoaderRoute: typeof AuthenticatedEstrategiaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/incidencias': {
       id: '/_authenticated/incidencias'
       path: '/incidencias'
@@ -249,6 +268,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChecklistsRoute: typeof AuthenticatedChecklistsRoute
   AuthenticatedComunicadosRoute: typeof AuthenticatedComunicadosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEstrategiaRoute: typeof AuthenticatedEstrategiaRoute
   AuthenticatedIncidenciasRoute: typeof AuthenticatedIncidenciasRoute
   AuthenticatedPedidosRoute: typeof AuthenticatedPedidosRoute
   AuthenticatedTurnosRoute: typeof AuthenticatedTurnosRoute
@@ -259,6 +279,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChecklistsRoute: AuthenticatedChecklistsRoute,
   AuthenticatedComunicadosRoute: AuthenticatedComunicadosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEstrategiaRoute: AuthenticatedEstrategiaRoute,
   AuthenticatedIncidenciasRoute: AuthenticatedIncidenciasRoute,
   AuthenticatedPedidosRoute: AuthenticatedPedidosRoute,
   AuthenticatedTurnosRoute: AuthenticatedTurnosRoute,
