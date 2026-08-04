@@ -112,7 +112,7 @@ function Turnos() {
             <article key={t.id} className="surface p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-display text-xl">{t.turno}</h2>
-                <AreaBadge nombre={t.areas?.nombre} />
+                <AreaBadge nombre={t.areas?.nombre ?? null} />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
                 {new Date(t.created_at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}
