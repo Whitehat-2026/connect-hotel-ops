@@ -17,6 +17,7 @@ import { Route as AuthenticatedChecklistsRouteImport } from './routes/_authentic
 import { Route as AuthenticatedComunicadosRouteImport } from './routes/_authenticated/comunicados'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedIncidenciasRouteImport } from './routes/_authenticated/incidencias'
+import { Route as AuthenticatedPedidosRouteImport } from './routes/_authenticated/pedidos'
 import { Route as AuthenticatedTurnosRouteImport } from './routes/_authenticated/turnos'
 import { Route as AuthenticatedVipRouteImport } from './routes/_authenticated/vip'
 
@@ -61,6 +62,11 @@ const AuthenticatedIncidenciasRoute =
     path: '/incidencias',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPedidosRoute = AuthenticatedPedidosRouteImport.update({
+  id: '/pedidos',
+  path: '/pedidos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTurnosRoute = AuthenticatedTurnosRouteImport.update({
   id: '/turnos',
   path: '/turnos',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/comunicados': typeof AuthenticatedComunicadosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/incidencias': typeof AuthenticatedIncidenciasRoute
+  '/pedidos': typeof AuthenticatedPedidosRoute
   '/turnos': typeof AuthenticatedTurnosRoute
   '/vip': typeof AuthenticatedVipRoute
 }
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/comunicados': typeof AuthenticatedComunicadosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/incidencias': typeof AuthenticatedIncidenciasRoute
+  '/pedidos': typeof AuthenticatedPedidosRoute
   '/turnos': typeof AuthenticatedTurnosRoute
   '/vip': typeof AuthenticatedVipRoute
 }
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_authenticated/comunicados': typeof AuthenticatedComunicadosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/incidencias': typeof AuthenticatedIncidenciasRoute
+  '/_authenticated/pedidos': typeof AuthenticatedPedidosRoute
   '/_authenticated/turnos': typeof AuthenticatedTurnosRoute
   '/_authenticated/vip': typeof AuthenticatedVipRoute
 }
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/comunicados'
     | '/dashboard'
     | '/incidencias'
+    | '/pedidos'
     | '/turnos'
     | '/vip'
   fileRoutesByTo: FileRoutesByTo
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/comunicados'
     | '/dashboard'
     | '/incidencias'
+    | '/pedidos'
     | '/turnos'
     | '/vip'
   id:
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/comunicados'
     | '/_authenticated/dashboard'
     | '/_authenticated/incidencias'
+    | '/_authenticated/pedidos'
     | '/_authenticated/turnos'
     | '/_authenticated/vip'
   fileRoutesById: FileRoutesById
@@ -209,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIncidenciasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pedidos': {
+      id: '/_authenticated/pedidos'
+      path: '/pedidos'
+      fullPath: '/pedidos'
+      preLoaderRoute: typeof AuthenticatedPedidosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/turnos': {
       id: '/_authenticated/turnos'
       path: '/turnos'
@@ -231,6 +250,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedComunicadosRoute: typeof AuthenticatedComunicadosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedIncidenciasRoute: typeof AuthenticatedIncidenciasRoute
+  AuthenticatedPedidosRoute: typeof AuthenticatedPedidosRoute
   AuthenticatedTurnosRoute: typeof AuthenticatedTurnosRoute
   AuthenticatedVipRoute: typeof AuthenticatedVipRoute
 }
@@ -240,6 +260,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedComunicadosRoute: AuthenticatedComunicadosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedIncidenciasRoute: AuthenticatedIncidenciasRoute,
+  AuthenticatedPedidosRoute: AuthenticatedPedidosRoute,
   AuthenticatedTurnosRoute: AuthenticatedTurnosRoute,
   AuthenticatedVipRoute: AuthenticatedVipRoute,
 }
