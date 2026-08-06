@@ -169,6 +169,13 @@ function AuthPage() {
           <label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Correo corporativo</label>
           <input
             type="email"
+            name="correo-acceso"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            data-lpignore="true"
+            data-form-type="other"
             className="field mt-1"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
