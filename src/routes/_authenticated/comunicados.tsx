@@ -14,9 +14,9 @@ import { comunicadoCrearSchema } from "@/lib/hotel.schemas";
 export const Route = createFileRoute("/_authenticated/comunicados")({
   head: () => ({
     meta: [
-      { title: "Comunicados internos · Palacio Aurum" },
+      { title: "Comunicados internos · Swissôtel Quito" },
       { name: "description", content: "Comunicados oficiales con confirmación de lectura y niveles de confidencialidad." },
-      { property: "og:title", content: "Comunicados internos · Palacio Aurum" },
+      { property: "og:title", content: "Comunicados internos · Swissôtel Quito" },
       { property: "og:description", content: "Canal oficial de avisos del hotel con acuse de lectura." },
     ],
   }),

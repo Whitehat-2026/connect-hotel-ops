@@ -17,9 +17,9 @@ import { incidenciaCrearSchema } from "@/lib/hotel.schemas";
 export const Route = createFileRoute("/_authenticated/incidencias")({
   head: () => ({
     meta: [
-      { title: "Incidencias operativas · Palacio Aurum" },
+      { title: "Incidencias operativas · Swissôtel Quito" },
       { name: "description", content: "Registro, seguimiento y escalación de incidencias por área con prioridad y estado." },
-      { property: "og:title", content: "Incidencias operativas · Palacio Aurum" },
+      { property: "og:title", content: "Incidencias operativas · Swissôtel Quito" },
       { property: "og:description", content: "Seguimiento trazable de incidencias del hotel." },
     ],
   }),

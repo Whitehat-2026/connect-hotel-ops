@@ -31,9 +31,9 @@ import { useSesion } from "@/hooks/use-sesion";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard operativo · Palacio Aurum" },
+      { title: "Dashboard operativo · Swissôtel Quito" },
       { name: "description", content: "KPIs de incidencias, checklists, VIPs y comunicados del hotel en tiempo real." },
-      { property: "og:title", content: "Dashboard operativo · Palacio Aurum" },
+      { property: "og:title", content: "Dashboard operativo · Swissôtel Quito" },
       { property: "og:description", content: "Indicadores clave de la operación diaria del hotel." },
     ],
   }),

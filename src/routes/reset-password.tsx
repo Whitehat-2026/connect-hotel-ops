@@ -7,9 +7,9 @@ export const Route = createFileRoute("/reset-password")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Restablecer contraseña · Palacio Aurum" },
+      { title: "Restablecer contraseña · Swissôtel Quito" },
       { name: "description", content: "Define una nueva contraseña para tu cuenta del hotel." },
-      { property: "og:title", content: "Restablecer contraseña · Palacio Aurum" },
+      { property: "og:title", content: "Restablecer contraseña · Swissôtel Quito" },
       { property: "og:description", content: "Define una nueva contraseña para tu cuenta del hotel." },
     ],
   }),

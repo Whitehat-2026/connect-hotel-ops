@@ -13,9 +13,9 @@ import { pedidoCrearSchema } from "@/lib/hotel.schemas";
 export const Route = createFileRoute("/_authenticated/pedidos")({
   head: () => ({
     meta: [
-      { title: "Pedidos internos · Palacio Aurum" },
+      { title: "Pedidos internos · Swissôtel Quito" },
       { name: "description", content: "Solicitudes entre áreas con flujo de aprobación, seguimiento y entrega." },
-      { property: "og:title", content: "Pedidos internos · Palacio Aurum" },
+      { property: "og:title", content: "Pedidos internos · Swissôtel Quito" },
       { property: "og:description", content: "Flujo de aprobación de requisiciones internas del hotel." },
     ],
   }),

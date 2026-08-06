@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/dashboard" className="flex items-center gap-3">
             <span className="font-display text-lg tracking-wide text-primary">
-              Palacio Aurum
+              Swissôtel Quito
             </span>
             <span className="hidden text-[10px] uppercase tracking-[0.3em] text-muted-foreground sm:inline">
               Comunicación interna
