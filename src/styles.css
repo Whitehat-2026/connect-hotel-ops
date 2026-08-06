@@ -46,28 +46,30 @@
 
 :root {
   --radius: 0.5rem;
-  --bg-primary: oklch(0.19 0.008 260);
-  --bg-secondary: oklch(0.235 0.01 262);
-  --bg-elevated: oklch(0.28 0.012 262);
-  --text-primary: oklch(0.955 0.006 90);
-  --text-secondary: oklch(0.72 0.012 90);
-  --accent-gold: oklch(0.79 0.11 84);
-  --accent-gold-soft: oklch(0.42 0.055 84);
-  --border-subtle: oklch(0.34 0.012 262);
+  /* Grafito #1C1C1C */
+  --bg-primary: oklch(0.2 0 0);
+  --bg-secondary: oklch(0.245 0 0);
+  --bg-elevated: oklch(0.295 0 0);
+  --text-primary: oklch(0.97 0.004 90);
+  --text-secondary: oklch(0.73 0.006 90);
+  /* Dorado #FFD700 */
+  --accent-gold: oklch(0.88 0.17 94);
+  --accent-gold-soft: oklch(0.45 0.09 94);
+  --border-subtle: oklch(0.35 0.004 90);
   --success: oklch(0.72 0.13 158);
   --warning: oklch(0.8 0.13 78);
   --danger: oklch(0.63 0.19 22);
 }
 
 .dark {
-  --bg-primary: oklch(0.19 0.008 260);
-  --bg-secondary: oklch(0.235 0.01 262);
-  --bg-elevated: oklch(0.28 0.012 262);
-  --text-primary: oklch(0.955 0.006 90);
-  --text-secondary: oklch(0.72 0.012 90);
-  --accent-gold: oklch(0.79 0.11 84);
-  --accent-gold-soft: oklch(0.42 0.055 84);
-  --border-subtle: oklch(0.34 0.012 262);
+  --bg-primary: oklch(0.2 0 0);
+  --bg-secondary: oklch(0.245 0 0);
+  --bg-elevated: oklch(0.295 0 0);
+  --text-primary: oklch(0.97 0.004 90);
+  --text-secondary: oklch(0.73 0.006 90);
+  --accent-gold: oklch(0.88 0.17 94);
+  --accent-gold-soft: oklch(0.45 0.09 94);
+  --border-subtle: oklch(0.35 0.004 90);
 }
 
 @layer base {
