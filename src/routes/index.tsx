@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldCheck, Radio, Crown, ClipboardCheck } from "lucide-react";
+import { Logo } from "@/components/hotel/Logo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
