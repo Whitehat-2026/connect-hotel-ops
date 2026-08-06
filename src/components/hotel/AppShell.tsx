@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useSesion } from "@/hooks/use-sesion";
 import { RoleBadge } from "./Badges";
+import { Logo } from "./Logo";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
