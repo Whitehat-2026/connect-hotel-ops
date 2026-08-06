@@ -169,6 +169,13 @@ function AuthPage() {
           <label className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Correo corporativo</label>
           <input
             type="email"
+            name="correo-acceso"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            data-lpignore="true"
+            data-form-type="other"
             className="field mt-1"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -309,8 +316,19 @@ function AuthPage() {
             ) : null}
 
             {estado === "verificando" || estado === "biometria" ? (
-              <div className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" /> Procesando de forma segura…
+              <div className="mt-6 flex flex-col items-center gap-4">
+                <div className="relative grid h-28 w-28 place-items-center">
+                  <span className="absolute inset-0 rounded-full border border-primary/20 animate-ping" />
+                  <span className="absolute inset-2 rounded-full border border-primary/30" />
+                  <Loader2 className="absolute inset-0 m-auto h-28 w-28 animate-spin text-primary/40" strokeWidth={0.6} />
+                  <Fingerprint
+                    className="h-12 w-12 text-primary animate-[pulse_1.4s_cubic-bezier(0.4,0,0.6,1)_infinite] drop-shadow-[0_0_12px_hsl(var(--primary)/0.6)]"
+                    strokeWidth={1.4}
+                  />
+                </div>
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" /> Procesando de forma segura…
+                </p>
               </div>
             ) : null}
           </div>
