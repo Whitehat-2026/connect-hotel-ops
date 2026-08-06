@@ -14,9 +14,9 @@ import { vipCrearSchema } from "@/lib/hotel.schemas";
 export const Route = createFileRoute("/_authenticated/vip")({
   head: () => ({
     meta: [
-      { title: "Alertas VIP · Palacio Aurum" },
+      { title: "Alertas VIP · Swissôtel Quito" },
       { name: "description", content: "Información confidencial de huéspedes VIP: preferencias, alergias y restricciones." },
-      { property: "og:title", content: "Alertas VIP · Palacio Aurum" },
+      { property: "og:title", content: "Alertas VIP · Swissôtel Quito" },
       { property: "og:description", content: "Módulo restringido a dirección y gerencia del hotel." },
     ],
   }),

@@ -8,13 +8,13 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Acceso biométrico · Palacio Aurum" },
+      { title: "Acceso biométrico · Swissôtel Quito" },
       {
         name: "description",
         content:
           "Accede a la plataforma del hotel con biometría (huella o rostro) o mediante código único enviado a tu correo registrado.",
       },
-      { property: "og:title", content: "Acceso biométrico · Palacio Aurum" },
+      { property: "og:title", content: "Acceso biométrico · Swissôtel Quito" },
       {
         property: "og:description",
         content: "Autenticación biométrica con acceso alternativo por código único al correo corporativo.",
@@ -158,7 +158,7 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="surface w-full max-w-md p-8">
-        <p className="text-[10px] uppercase tracking-[0.35em] text-primary">Palacio Aurum</p>
+        <p className="text-[10px] uppercase tracking-[0.35em] text-primary">Swissôtel Quito</p>
         <h1 className="mt-3 font-display text-3xl">Acceso al personal</h1>
         <div className="gold-rule mt-4 w-20" />
         <p className="mt-4 text-sm text-muted-foreground">

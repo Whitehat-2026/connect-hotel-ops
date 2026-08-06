@@ -14,9 +14,9 @@ import { useSesion } from "@/hooks/use-sesion";
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Administración · Palacio Aurum" },
+      { title: "Administración · Swissôtel Quito" },
       { name: "description", content: "Gestión de usuarios, roles y áreas operativas del hotel." },
-      { property: "og:title", content: "Administración · Palacio Aurum" },
+      { property: "og:title", content: "Administración · Swissôtel Quito" },
       { property: "og:description", content: "Panel de administración de accesos y estructura del hotel." },
     ],
   }),

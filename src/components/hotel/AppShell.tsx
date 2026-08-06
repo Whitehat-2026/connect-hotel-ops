@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useSesion } from "@/hooks/use-sesion";
 import { RoleBadge } from "./Badges";
+import { Logo } from "./Logo";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -46,9 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/dashboard" className="flex items-center gap-3">
-            <span className="font-display text-lg tracking-wide text-primary">
-              Palacio Aurum
-            </span>
+            <Logo className="h-9" />
             <span className="hidden text-[10px] uppercase tracking-[0.3em] text-muted-foreground sm:inline">
               Comunicación interna
             </span>

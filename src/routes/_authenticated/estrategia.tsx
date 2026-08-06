@@ -21,9 +21,9 @@ import { listarIncidencias, listarPedidos, listarComunicados } from "@/lib/hotel
 export const Route = createFileRoute("/_authenticated/estrategia")({
   head: () => ({
     meta: [
-      { title: "Estrategia y análisis · Palacio Aurum" },
+      { title: "Estrategia y análisis · Swissôtel Quito" },
       { name: "description", content: "Análisis de tendencias operativas, cuellos de botella y adopción de comunicados para dirección." },
-      { property: "og:title", content: "Estrategia y análisis · Palacio Aurum" },
+      { property: "og:title", content: "Estrategia y análisis · Swissôtel Quito" },
       { property: "og:description", content: "Panel analítico para dirección y gerencia del hotel." },
     ],
   }),

@@ -13,9 +13,9 @@ import { turnoCrearSchema } from "@/lib/hotel.schemas";
 export const Route = createFileRoute("/_authenticated/turnos")({
   head: () => ({
     meta: [
-      { title: "Entrega de turno · Palacio Aurum" },
+      { title: "Entrega de turno · Swissôtel Quito" },
       { name: "description", content: "Entrega digital de turno con pendientes, VIPs, incidencias abiertas y firma de recepción." },
-      { property: "og:title", content: "Entrega de turno · Palacio Aurum" },
+      { property: "og:title", content: "Entrega de turno · Swissôtel Quito" },
       { property: "og:description", content: "Handover digital firmado entre turnos del hotel." },
     ],
   }),

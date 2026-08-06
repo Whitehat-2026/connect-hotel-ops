@@ -1,16 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldCheck, Radio, Crown, ClipboardCheck } from "lucide-react";
+import { Logo } from "@/components/hotel/Logo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Palacio Aurum · Comunicación interna hotelera" },
+      { title: "Swissôtel Quito · Comunicación interna hotelera" },
       {
         name: "description",
         content:
           "Plataforma de comunicación interna y coordinación operativa para hoteles de lujo: incidencias, turnos, comunicados, VIP, checklists y pedidos internos.",
       },
-      { property: "og:title", content: "Palacio Aurum · Comunicación interna hotelera" },
+      { property: "og:title", content: "Swissôtel Quito · Comunicación interna hotelera" },
       {
         property: "og:description",
         content:
@@ -32,9 +33,10 @@ function Landing() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-20">
-        <p className="text-[11px] uppercase tracking-[0.4em] text-primary">Hotel 5 estrellas</p>
+        <Logo className="h-14" />
+        <p className="mt-8 text-[11px] uppercase tracking-[0.4em] text-primary">Hotel 5 estrellas</p>
         <h1 className="mt-4 font-display text-5xl leading-tight md:text-6xl">
-          Palacio Aurum
+          Swissôtel Quito
           <span className="block text-primary">Comunicación interna y operación A&amp;B</span>
         </h1>
         <div className="gold-rule mt-6 w-32" />

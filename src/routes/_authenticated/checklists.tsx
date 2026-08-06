@@ -10,9 +10,9 @@ import { alternarItem, listarChecklists } from "@/lib/hotel.functions";
 export const Route = createFileRoute("/_authenticated/checklists")({
   head: () => ({
     meta: [
-      { title: "Checklists y SOPs · Palacio Aurum" },
+      { title: "Checklists y SOPs · Swissôtel Quito" },
       { name: "description", content: "Listas de verificación por área y turno con seguimiento de cumplimiento de estándares." },
-      { property: "og:title", content: "Checklists y SOPs · Palacio Aurum" },
+      { property: "og:title", content: "Checklists y SOPs · Swissôtel Quito" },
       { property: "og:description", content: "Cumplimiento de procedimientos operativos estándar del hotel." },
     ],
   }),
