@@ -32,7 +32,8 @@ function Landing() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-20">
-        <p className="text-[11px] uppercase tracking-[0.4em] text-primary">Hotel 5 estrellas</p>
+        <Logo className="h-14" />
+        <p className="mt-8 text-[11px] uppercase tracking-[0.4em] text-primary">Hotel 5 estrellas</p>
         <h1 className="mt-4 font-display text-5xl leading-tight md:text-6xl">
           Swissôtel Quito
           <span className="block text-primary">Comunicación interna y operación A&amp;B</span>
