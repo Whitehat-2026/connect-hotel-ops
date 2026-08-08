@@ -17,16 +17,31 @@ import {
 } from "./hotel.schemas";
 import { limpiar } from "./hotel.server";
 
+/** Reintenta una lectura cuando el token recién emitido aún no es válido por desfase de reloj. */
+async function conReintento<T>(fn: () => Promise<T>, esFallo: (r: T) => string | null): Promise<T> {
+  let r = await fn();
+  const msg = esFallo(r);
+  if (msg && /issued at future|not yet valid|JWT/i.test(msg)) {
+    await new Promise((res) => setTimeout(res, 1500));
+    r = await fn();
+  }
+  return r;
+}
+
 /** Sesión: perfil, roles y catálogo de áreas. */
 export const obtenerSesion = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const [perfil, roles, areas] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("areas").select("*").order("nombre"),
-    ]);
+    const [perfil, roles, areas] = await conReintento(
+      () =>
+        Promise.all([
+          supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+          supabase.from("user_roles").select("role").eq("user_id", userId),
+          supabase.from("areas").select("*").order("nombre"),
+        ]),
+      ([p, r, a]) => p.error?.message ?? r.error?.message ?? a.error?.message ?? null,
+    );
     if (perfil.error) throw new Error(perfil.error.message);
     return {
       userId,
@@ -35,6 +50,7 @@ export const obtenerSesion = createServerFn({ method: "GET" })
       areas: areas.data ?? [],
     };
   });
+
 
 export const listarIncidencias = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
