@@ -10,7 +10,10 @@ export function useSesion() {
     queryKey: ["sesion"],
     queryFn: () => fn(),
     staleTime: 60_000,
+    retry: 2,
+    retryDelay: 1200,
   });
+
 
   const roles = (query.data?.roles ?? []) as Rol[];
   return {
