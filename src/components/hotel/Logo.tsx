@@ -3,18 +3,15 @@ import { cn } from "@/lib/utils";
 
 /**
  * Marca corporativa Swissôtel Quito.
- * El original viene sobre fondo claro, por lo que se presenta en una placa
- * clara con borde dorado sutil para mantener legibilidad sobre grafito.
+ * Se presenta directamente sobre el fondo grafito, sin placa ni tarjeta.
  */
 export function Logo({ className, alt = "Swissôtel Quito · Hotels & Resorts" }: { className?: string; alt?: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center justify-center overflow-hidden rounded-md border border-primary/30 bg-foreground/95 px-3 py-1.5",
-        className,
-      )}
-    >
-      <img src={logoAsset.url} alt={alt} className="h-full w-auto object-contain" loading="lazy" />
-    </span>
+    <img
+      src={logoAsset.url}
+      alt={alt}
+      className={cn("h-9 w-auto shrink-0 object-contain", className)}
+      loading="lazy"
+    />
   );
 }
