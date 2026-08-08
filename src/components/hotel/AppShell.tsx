@@ -39,6 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
+    toast.success("Sesión cerrada de forma segura.");
     navigate({ to: "/auth", replace: true });
   }
 
