@@ -47,13 +47,20 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/dashboard" className="flex items-center gap-3">
-            <Logo className="h-9" />
-            <span className="hidden text-[10px] uppercase tracking-[0.3em] text-muted-foreground sm:inline">
-              Comunicación interna
+        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3">
+          <Link to="/dashboard" className="flex min-w-0 items-center gap-3">
+            <Logo className="h-8 sm:h-10" />
+            <span className="hidden h-8 w-px shrink-0 bg-primary/40 sm:block" aria-hidden />
+            <span className="min-w-0">
+              <span className="block truncate font-display text-base leading-tight text-foreground sm:text-lg">
+                Swissôtel Quito
+              </span>
+              <span className="block truncate text-[10px] uppercase tracking-[0.3em] text-primary/80">
+                Comunicación interna
+              </span>
             </span>
           </Link>
+
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
               <p className="text-xs text-foreground">{sesion?.perfil?.nombre}</p>
