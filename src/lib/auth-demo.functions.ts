@@ -1,0 +1,40 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+
+const accesoSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(255),
+});
+
+/**
+ * Acceso de DEMOSTRACIÓN.
+ * El correo corporativo funciona únicamente como identificador: no se valida
+ * contra ningún directorio ni se solicita contraseña. La verificación
+ * biométrica es una simulación visual del cliente; aquí sólo se emite la
+ * sesión para poder recorrer la plataforma.
+ */
+export const accesoDemo = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => accesoSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    async function generar() {
+      return supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email: data.email });
+    }
+
+    let res = await generar();
+    if (res.error || !res.data?.properties?.hashed_token) {
+      const creado = await supabaseAdmin.auth.admin.createUser({
+        email: data.email,
+        email_confirm: true,
+        user_metadata: { nombre: data.email.split("@")[0] },
+      });
+      if (creado.error && !/already/i.test(creado.error.message)) {
+        throw new Error("No fue posible iniciar la sesión de demostración.");
+      }
+      res = await generar();
+    }
+
+    const tokenHash = res.data?.properties?.hashed_token;
+    if (!tokenHash) throw new Error("No fue posible iniciar la sesión de demostración.");
+    return { tokenHash };
+  });
