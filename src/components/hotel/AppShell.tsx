@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -39,6 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
+    toast.success("Sesión cerrada de forma segura.");
     navigate({ to: "/auth", replace: true });
   }
 
