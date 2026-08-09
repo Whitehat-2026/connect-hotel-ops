@@ -92,7 +92,7 @@ function Dashboard() {
         <StatCard label="Incidencias abiertas" value={abiertas.length} icon={<AlertTriangle className="h-4 w-4" />} tone="warning" hint="Incluye escaladas y en proceso" />
         <StatCard label="Tiempo medio respuesta" value={`${tiempoMedio} min`} icon={<Timer className="h-4 w-4" />} hint="Desde alta hasta primera acción" />
         <StatCard label="Checklists completados" value={`${completados}/${items.length}`} icon={<CheckSquare className="h-4 w-4" />} tone="success" hint="Tareas SOP del día" />
-        <StatCard label="VIPs del día" value={esGerencia ? (vips.data ?? []).length : "—"} icon={<Crown className="h-4 w-4" />} hint={esGerencia ? "Visible solo para gerencia" : "Requiere rol de gerencia"} />
+        <StatCard label="VIPs del día" value={esGerencia ? (vips.data ?? []).length : "Restringido"} icon={<Crown className="h-4 w-4" />} hint={esGerencia ? "Visible solo para gerencia" : "🔒 Información restringida"} />
         <StatCard label="Comunicados sin leer" value={sinLeer} icon={<Megaphone className="h-4 w-4" />} tone="danger" hint="Pendientes de confirmación" />
       </div>
 

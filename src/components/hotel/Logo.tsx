@@ -10,7 +10,7 @@ export function Logo({ className, alt = "Swissôtel Quito · Hotels & Resorts" }
     <img
       src={logoAsset.url}
       alt={alt}
-      className={cn("h-9 w-auto shrink-0 object-contain", className)}
+      className={cn("h-20 w-auto shrink-0 object-contain", className)}
       loading="lazy"
     />
   );
