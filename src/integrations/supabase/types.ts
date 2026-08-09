@@ -211,6 +211,36 @@ export type Database = {
           },
         ]
       }
+      demo_accounts: {
+        Row: {
+          area_codigo: string | null
+          created_at: string
+          email: string
+          id: string
+          nombre: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          area_codigo?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          nombre?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          area_codigo?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nombre?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       incidents: {
         Row: {
           area_id: string | null
