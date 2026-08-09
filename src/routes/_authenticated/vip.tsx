@@ -86,6 +86,13 @@ function Vip() {
         }
       />
 
+      <div className="surface mb-6 border-danger/30 p-4">
+        <p className="font-display text-lg text-danger">🔒 Información confidencial</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Acceso restringido. Información destinada exclusivamente a personal autorizado.
+        </p>
+      </div>
+
       <form onSubmit={enviar} className="surface mb-8 grid gap-3 p-5 md:grid-cols-3">
         <input className="field" placeholder="Nombre del huésped" value={form.huesped} onChange={(e) => setForm({ ...form, huesped: e.target.value })} maxLength={120} required />
         <input className="field" placeholder="Habitación / suite" value={form.habitacion} onChange={(e) => setForm({ ...form, habitacion: e.target.value })} maxLength={40} />
