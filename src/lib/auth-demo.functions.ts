@@ -42,7 +42,11 @@ export const accesoDemo = createServerFn({ method: "POST" })
      * El rol NUNCA se deduce del texto del correo: se lee de la tabla interna
      * `demo_accounts`. Cualquier correo no listado entra como `colaborador`.
      */
-    const usuarioId = res.data?.user?.id;
+    let usuarioId = res.data?.user?.id;
+    if (!usuarioId) {
+      const lista = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      usuarioId = lista.data?.users.find((u) => u.email?.toLowerCase() === data.email)?.id;
+    }
     if (usuarioId) {
       const cuenta = await supabaseAdmin
         .from("demo_accounts")
@@ -53,7 +57,7 @@ export const accesoDemo = createServerFn({ method: "POST" })
       const codigo = cuenta.data?.area_codigo ?? "COC";
       const area = await supabaseAdmin.from("areas").select("id").eq("codigo", codigo).maybeSingle();
 
-      await supabaseAdmin.from("profiles").upsert(
+      const perfil = await supabaseAdmin.from("profiles").upsert(
         {
           id: usuarioId,
           nombre: cuenta.data?.nombre ?? data.email.split("@")[0]!,
@@ -62,6 +66,7 @@ export const accesoDemo = createServerFn({ method: "POST" })
         },
         { onConflict: "id" },
       );
+      if (perfil.error) throw new Error(`Perfil: ${perfil.error.message}`);
 
       const rol = cuenta.data?.role ?? "colaborador";
       const existente = await supabaseAdmin
@@ -70,7 +75,8 @@ export const accesoDemo = createServerFn({ method: "POST" })
         .eq("user_id", usuarioId);
       if (!(existente.data ?? []).some((r) => r.role === rol)) {
         await supabaseAdmin.from("user_roles").delete().eq("user_id", usuarioId);
-        await supabaseAdmin.from("user_roles").insert({ user_id: usuarioId, role: rol });
+        const ins = await supabaseAdmin.from("user_roles").insert({ user_id: usuarioId, role: rol });
+        if (ins.error) throw new Error(`Rol: ${ins.error.message}`);
       }
     }
 
