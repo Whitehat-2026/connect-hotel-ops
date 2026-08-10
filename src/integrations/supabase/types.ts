@@ -241,9 +241,45 @@ export type Database = {
         }
         Relationships: []
       }
+      incident_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          descripcion: string
+          id: string
+          incident_id: string
+          tipo: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          descripcion: string
+          id?: string
+          incident_id: string
+          tipo: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          descripcion?: string
+          id?: string
+          incident_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_events_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incidents: {
         Row: {
           area_id: string | null
+          area_origen: string | null
           asignado_a: string | null
           created_at: string
           created_by: string | null
@@ -259,6 +295,7 @@ export type Database = {
         }
         Insert: {
           area_id?: string | null
+          area_origen?: string | null
           asignado_a?: string | null
           created_at?: string
           created_by?: string | null
@@ -274,6 +311,7 @@ export type Database = {
         }
         Update: {
           area_id?: string | null
+          area_origen?: string | null
           asignado_a?: string | null
           created_at?: string
           created_by?: string | null
@@ -291,6 +329,13 @@ export type Database = {
           {
             foreignKeyName: "incidents_area_id_fkey"
             columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_area_origen_fkey"
+            columns: ["area_origen"]
             isOneToOne: false
             referencedRelation: "areas"
             referencedColumns: ["id"]
@@ -394,6 +439,41 @@ export type Database = {
             columns: ["area_id"]
             isOneToOne: false
             referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      request_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          descripcion: string
+          id: string
+          request_id: string
+          tipo: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          descripcion: string
+          id?: string
+          request_id: string
+          tipo: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          descripcion?: string
+          id?: string
+          request_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "internal_requests"
             referencedColumns: ["id"]
           },
         ]

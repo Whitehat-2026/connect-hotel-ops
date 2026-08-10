@@ -8,7 +8,8 @@ import { PageHeader } from "@/components/hotel/PageHeader";
 import { EmptyState } from "@/components/hotel/EmptyState";
 import { AreaBadge, PriorityBadge } from "@/components/hotel/Badges";
 import { useSesion } from "@/hooks/use-sesion";
-import { crearComunicado, listarComunicados, marcarLeido } from "@/lib/hotel.functions";
+import { fechaHora } from "@/lib/fecha";
+import { crearComunicado, listarComunicados, listarLecturas, marcarLeido } from "@/lib/hotel.functions";
 import { comunicadoCrearSchema } from "@/lib/hotel.schemas";
 
 export const Route = createFileRoute("/_authenticated/comunicados")({
@@ -32,6 +33,14 @@ function Comunicados() {
   const [form, setForm] = useState({ titulo: "", cuerpo: "", area_id: "", confidencialidad: "interno", prioridad: "media" });
 
   const { data = [] } = useQuery({ queryKey: ["comunicados"], queryFn: () => listar() });
+
+  const [lecturasDe, setLecturasDe] = useState<string | null>(null);
+  const lecturasFn = useServerFn(listarLecturas);
+  const { data: lecturas = [] } = useQuery({
+    queryKey: ["comunicado-lecturas", lecturasDe],
+    queryFn: () => lecturasFn({ data: { id: lecturasDe! } }),
+    enabled: Boolean(lecturasDe) && esGerencia,
+  });
 
   const mCrear = useMutation({
     mutationFn: (input: unknown) => crear({ data: input as never }),
@@ -107,24 +116,47 @@ function Comunicados() {
                 </div>
               </div>
               <p className="mt-3 whitespace-pre-line text-sm text-muted-foreground">{c.cuerpo}</p>
-              <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-                <span className="text-xs text-muted-foreground">
-                  {new Date(c.created_at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}
-                </span>
-                {c.leido ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-success">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Lectura confirmada
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-gold hover:btn-gold-hover px-3 py-1.5 text-xs"
-                    onClick={() => mLeer.mutate(c.id)}
-                  >
-                    Confirmar lectura
-                  </button>
-                )}
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                <span className="text-xs text-muted-foreground">{fechaHora(c.created_at)}</span>
+                <div className="flex items-center gap-3">
+                  {esGerencia ? (
+                    <button
+                      type="button"
+                      className="text-xs uppercase tracking-[0.1em] text-primary"
+                      onClick={() => setLecturasDe(lecturasDe === c.id ? null : c.id)}
+                    >
+                      {lecturasDe === c.id ? "Ocultar acuses" : "Ver acuses de lectura"}
+                    </button>
+                  ) : null}
+                  {c.leido ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-success">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> ✓ Leído
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-gold hover:btn-gold-hover px-3 py-1.5 text-xs"
+                      onClick={() => mLeer.mutate(c.id)}
+                    >
+                      Confirmar lectura
+                    </button>
+                  )}
+                </div>
               </div>
+              {esGerencia && lecturasDe === c.id ? (
+                <ul className="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+                  {lecturas.length === 0 ? (
+                    <li>Aún nadie ha confirmado la lectura.</li>
+                  ) : (
+                    lecturas.map((l) => (
+                      <li key={l.user_id}>
+                        ✓ {l.nombre} · {fechaHora(l.leido_at)}
+                      </li>
+                    ))
+                  )}
+                </ul>
+              ) : null}
+
             </article>
           ))}
         </div>

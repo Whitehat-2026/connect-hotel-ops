@@ -3,16 +3,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/hotel/PageHeader";
 import { DataTable, type Columna } from "@/components/hotel/DataTable";
 import { PriorityBadge, StatusBadge } from "@/components/hotel/Badges";
+import { Timeline } from "@/components/hotel/Timeline";
 import { useSesion } from "@/hooks/use-sesion";
+import { fechaHora } from "@/lib/fecha";
 import {
   actualizarIncidencia,
   crearIncidencia,
+  listarEventosIncidencia,
   listarIncidencias,
 } from "@/lib/hotel.functions";
 import { incidenciaCrearSchema } from "@/lib/hotel.schemas";
+
 
 export const Route = createFileRoute("/_authenticated/incidencias")({
   head: () => ({
@@ -36,9 +41,17 @@ function Incidencias() {
   const actualizar = useServerFn(actualizarIncidencia);
 
   const [filtroEstado, setFiltroEstado] = useState("todas");
+  const [detalle, setDetalle] = useState<Fila | null>(null);
   const [form, setForm] = useState({ titulo: "", descripcion: "", area_id: "", ubicacion: "", prioridad: "media" });
 
   const { data = [] } = useQuery({ queryKey: ["incidencias"], queryFn: () => listar() });
+
+  const eventosFn = useServerFn(listarEventosIncidencia);
+  const { data: eventos = [], isLoading: cargandoEventos } = useQuery({
+    queryKey: ["incidencia-eventos", detalle?.id],
+    queryFn: () => eventosFn({ data: { id: detalle!.id } }),
+    enabled: Boolean(detalle),
+  });
 
   const mCrear = useMutation({
     mutationFn: (input: unknown) => crear({ data: input as never }),
@@ -52,7 +65,10 @@ function Incidencias() {
 
   const mEstado = useMutation({
     mutationFn: (input: { id: string; estado: string }) => actualizar({ data: input as never }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["incidencias"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["incidencias"] });
+      qc.invalidateQueries({ queryKey: ["incidencia-eventos"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -69,36 +85,56 @@ function Incidencias() {
         </div>
       ),
     },
-    { key: "area", header: "Área", render: (r) => <span className="text-xs">{r.areas?.nombre ?? "—"}</span> },
+    {
+      key: "origen",
+      header: "Área origen",
+      render: (r) => <span className="text-xs">{r.origen?.nombre ?? "No registrada"}</span>,
+    },
+    {
+      key: "responsable",
+      header: "Área responsable",
+      render: (r) => (
+        <span className="inline-flex items-center gap-1 text-xs">
+          <ArrowRight className="h-3 w-3 text-primary" aria-hidden />
+          {r.areas?.nombre ?? "Sin asignar"}
+        </span>
+      ),
+    },
     { key: "prioridad", header: "Prioridad", render: (r) => <PriorityBadge prioridad={r.prioridad} /> },
     { key: "estado", header: "Estado", render: (r) => <StatusBadge estado={r.estado} /> },
     {
       key: "fecha",
-      header: "Alta",
-      render: (r) => (
-        <span className="text-xs text-muted-foreground">
-          {new Date(r.created_at).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
-        </span>
-      ),
+      header: "Fecha / hora",
+      render: (r) => <span className="text-xs text-muted-foreground">{fechaHora(r.created_at)}</span>,
     },
     {
       key: "acciones",
       header: "Acciones",
       render: (r) => (
-        <select
-          className="field w-40 py-1 text-xs"
-          value={r.estado}
-          onChange={(e) => mEstado.mutate({ id: r.id, estado: e.target.value })}
-        >
-          {["abierta", "en_proceso", "escalada", "resuelta", "cerrada"].map((e) => (
-            <option key={e} value={e}>
-              {e.replace("_", " ")}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-2">
+          <select
+            className="field w-40 py-1 text-xs"
+            value={r.estado}
+            onChange={(e) => mEstado.mutate({ id: r.id, estado: e.target.value })}
+          >
+            {["abierta", "en_proceso", "escalada", "resuelta", "cerrada"].map((e) => (
+              <option key={e} value={e}>
+                {e.replace("_", " ")}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="rounded-md border border-primary/40 px-2 py-1 text-[11px] uppercase tracking-[0.1em] text-primary"
+            onClick={() => setDetalle(r)}
+          >
+            Ver detalle
+          </button>
+        </div>
       ),
     },
   ];
+
 
   function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -159,6 +195,55 @@ function Incidencias() {
       ) : null}
 
       <DataTable columnas={columnas} filas={filas} vacio="Sin incidencias registradas" />
+
+      {detalle ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4" role="dialog" aria-modal="true">
+          <div className="surface max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="font-display text-2xl">{detalle.titulo}</h2>
+                <p className="text-sm text-muted-foreground">{detalle.descripcion ?? "Sin descripción"}</p>
+              </div>
+              <button type="button" className="text-sm text-muted-foreground hover:text-primary" onClick={() => setDetalle(null)}>
+                Cerrar
+              </button>
+            </div>
+
+            <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Área que reporta</dt>
+                <dd>{detalle.origen?.nombre ?? "No registrada"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Área responsable</dt>
+                <dd>{detalle.areas?.nombre ?? "Sin asignar"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Ubicación</dt>
+                <dd>{detalle.ubicacion ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Alta</dt>
+                <dd>{fechaHora(detalle.created_at)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Primera respuesta</dt>
+                <dd>{fechaHora(detalle.primera_respuesta_at)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Resolución</dt>
+                <dd>{fechaHora(detalle.resuelta_at)}</dd>
+              </div>
+            </dl>
+
+            <h3 className="mt-6 font-display text-lg">Trazabilidad</h3>
+            <div className="mt-3">
+              <Timeline eventos={eventos} cargando={cargandoEventos} />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
+
   );
 }
