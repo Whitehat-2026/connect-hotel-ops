@@ -6,9 +6,17 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/hotel/PageHeader";
 import { DataTable, type Columna } from "@/components/hotel/DataTable";
 import { PriorityBadge, StatusBadge } from "@/components/hotel/Badges";
+import { Timeline } from "@/components/hotel/Timeline";
 import { useSesion } from "@/hooks/use-sesion";
-import { cambiarEstadoPedido, crearPedido, listarPedidos } from "@/lib/hotel.functions";
+import { fechaHora } from "@/lib/fecha";
+import {
+  cambiarEstadoPedido,
+  crearPedido,
+  listarEventosPedido,
+  listarPedidos,
+} from "@/lib/hotel.functions";
 import { pedidoCrearSchema } from "@/lib/hotel.schemas";
+
 
 export const Route = createFileRoute("/_authenticated/pedidos")({
   head: () => ({
@@ -31,8 +39,16 @@ function Pedidos() {
   const crear = useServerFn(crearPedido);
   const cambiar = useServerFn(cambiarEstadoPedido);
   const [form, setForm] = useState({ titulo: "", detalle: "", area_solicitante: "", area_destino: "", prioridad: "media" });
+  const [detalle, setDetalle] = useState<Fila | null>(null);
 
   const { data = [] } = useQuery({ queryKey: ["pedidos"], queryFn: () => listar() });
+
+  const eventosFn = useServerFn(listarEventosPedido);
+  const { data: eventos = [], isLoading: cargandoEventos } = useQuery({
+    queryKey: ["pedido-eventos", detalle?.id],
+    queryFn: () => eventosFn({ data: { id: detalle!.id } }),
+    enabled: Boolean(detalle),
+  });
 
   const mCrear = useMutation({
     mutationFn: (input: unknown) => crear({ data: input as never }),
@@ -46,9 +62,30 @@ function Pedidos() {
 
   const mEstado = useMutation({
     mutationFn: (input: { id: string; estado: string }) => cambiar({ data: input as never }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pedidos"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pedidos"] });
+      qc.invalidateQueries({ queryKey: ["pedido-eventos"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  /** Solo los pedidos de prioridad alta o crítica requieren visto bueno de gerencia. */
+  const requiereAprobacion = (r: Fila) => r.prioridad === "alta" || r.prioridad === "critica";
+
+  function etiquetaAprobacion(r: Fila) {
+    if (!requiereAprobacion(r)) return { texto: "No requiere aprobación", clase: "text-muted-foreground" };
+    if (r.estado === "rechazado") return { texto: "Rechazado por Gerencia", clase: "text-danger" };
+    if (r.aprobado_por) return { texto: "Aprobado por Gerencia", clase: "text-success" };
+    return { texto: "Pendiente de aprobación", clase: "text-warning" };
+  }
+
+  /** Estados disponibles: los operativos circulan directo; los de alta prioridad pasan por gerencia. */
+  function estadosDisponibles(r: Fila) {
+    const operativos = ["solicitado", "en_proceso", "entregado", "cerrado"];
+    if (esGerencia) return ["solicitado", "aprobado", "rechazado", "en_proceso", "entregado", "cerrado"];
+    if (requiereAprobacion(r) && !r.aprobado_por) return [];
+    return operativos;
+  }
 
   const columnas: Columna<Fila>[] = [
     {
@@ -73,24 +110,52 @@ function Pedidos() {
     { key: "prioridad", header: "Prioridad", render: (r) => <PriorityBadge prioridad={r.prioridad} /> },
     { key: "estado", header: "Estado", render: (r) => <StatusBadge estado={r.estado} /> },
     {
-      key: "acciones",
+      key: "aprobacion",
       header: "Aprobación",
-      render: (r) =>
-        esGerencia ? (
-          <select
-            className="field w-36 py-1 text-xs"
-            value={r.estado}
-            onChange={(e) => mEstado.mutate({ id: r.id, estado: e.target.value })}
-          >
-            {["solicitado", "aprobado", "rechazado", "en_proceso", "entregado", "cerrado"].map((e) => (
-              <option key={e} value={e}>{e.replace("_", " ")}</option>
-            ))}
-          </select>
-        ) : (
-          <span className="text-xs text-muted-foreground">Requiere gerencia</span>
-        ),
+      render: (r) => {
+        const e = etiquetaAprobacion(r);
+        return <span className={`text-xs ${e.clase}`}>{e.texto}</span>;
+      },
+    },
+    {
+      key: "fecha",
+      header: "Fecha / hora",
+      render: (r) => <span className="text-xs text-muted-foreground">{fechaHora(r.created_at)}</span>,
+    },
+    {
+      key: "acciones",
+      header: "Acciones",
+      render: (r) => {
+        const estados = estadosDisponibles(r);
+        return (
+          <div className="flex flex-col gap-2">
+            {estados.length > 0 ? (
+              <select
+                className="field w-36 py-1 text-xs"
+                value={estados.includes(r.estado) ? r.estado : ""}
+                onChange={(e) => mEstado.mutate({ id: r.id, estado: e.target.value })}
+              >
+                {!estados.includes(r.estado) ? <option value="">{r.estado.replace("_", " ")}</option> : null}
+                {estados.map((e) => (
+                  <option key={e} value={e}>{e.replace("_", " ")}</option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-xs text-muted-foreground">Esperando gerencia</span>
+            )}
+            <button
+              type="button"
+              className="rounded-md border border-primary/40 px-2 py-1 text-[11px] uppercase tracking-[0.1em] text-primary"
+              onClick={() => setDetalle(r)}
+            >
+              Ver detalle
+            </button>
+          </div>
+        );
+      },
     },
   ];
+
 
   function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -137,6 +202,47 @@ function Pedidos() {
       </form>
 
       <DataTable columnas={columnas} filas={data} vacio="Sin pedidos internos" />
+
+      {detalle ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4" role="dialog" aria-modal="true">
+          <div className="surface max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="font-display text-2xl">{detalle.titulo}</h2>
+                <p className="text-sm text-muted-foreground">{detalle.detalle ?? "Sin detalle"}</p>
+              </div>
+              <button type="button" className="text-sm text-muted-foreground hover:text-primary" onClick={() => setDetalle(null)}>
+                Cerrar
+              </button>
+            </div>
+
+            <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Área solicitante</dt>
+                <dd>{detalle.solicitante?.nombre ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Área destino</dt>
+                <dd>{detalle.destino?.nombre ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Solicitado</dt>
+                <dd>{fechaHora(detalle.created_at)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Aprobación</dt>
+                <dd>{etiquetaAprobacion(detalle).texto}</dd>
+              </div>
+            </dl>
+
+            <h3 className="mt-6 font-display text-lg">Trazabilidad</h3>
+            <div className="mt-3">
+              <Timeline eventos={eventos} cargando={cargandoEventos} />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
+
   );
 }

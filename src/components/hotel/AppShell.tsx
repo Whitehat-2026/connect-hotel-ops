@@ -49,8 +49,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3">
           <Link to="/dashboard" className="flex min-w-0 items-center gap-3">
-            <Logo className="h-8 sm:h-10" />
-            <span className="hidden h-8 w-px shrink-0 bg-primary/40 sm:block" aria-hidden />
+            <Logo />
+            <span className="hidden h-10 w-px shrink-0 bg-primary/40 sm:block" aria-hidden />
+
             <span className="min-w-0">
               <span className="block truncate font-display text-base leading-tight text-foreground sm:text-lg">
                 Swissôtel Quito

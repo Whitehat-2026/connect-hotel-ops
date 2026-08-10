@@ -47,20 +47,56 @@ export const listarIncidencias = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("incidents")
-      .select("*, areas(nombre, codigo)")
+      .select(
+        "*, areas:areas!incidents_area_id_fkey(nombre, codigo), origen:areas!incidents_area_origen_fkey(nombre, codigo)",
+      )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
+  });
+
+export const listarEventosIncidencia = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => idSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: eventos, error } = await context.supabase
+      .from("incident_events")
+      .select("*")
+      .eq("incident_id", data.id)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    const ids = [...new Set((eventos ?? []).map((e) => e.actor_id).filter(Boolean))] as string[];
+    const perfiles = ids.length
+      ? (await context.supabase.from("profiles").select("id, nombre").in("id", ids)).data ?? []
+      : [];
+    return (eventos ?? []).map((e) => ({
+      ...e,
+      actor: perfiles.find((p) => p.id === e.actor_id)?.nombre ?? null,
+    }));
   });
 
 export const crearIncidencia = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => incidenciaCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { supabase, userId } = context;
+    const perfil = await supabase.from("profiles").select("area_id, nombre").eq("id", userId).maybeSingle();
+    const areaOrigen = perfil.data?.area_id ?? null;
+    const { data: creada, error } = await supabase
       .from("incidents")
-      .insert(limpiar({ ...data, created_by: context.userId }));
+      .insert(limpiar({ ...data, created_by: userId, area_origen: areaOrigen }))
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
+
+    const nombres = (await supabase.from("areas").select("id, nombre")).data ?? [];
+    const nombreArea = (id?: string | null) => nombres.find((a) => a.id === id)?.nombre ?? null;
+    await supabase.from("incident_events").insert({
+      incident_id: creada.id,
+      actor_id: userId,
+      tipo: "creada",
+      descripcion: `${nombreArea(areaOrigen) ?? perfil.data?.nombre ?? "Un colaborador"} reportó la incidencia a ${nombreArea(data.area_id) ?? "sin área responsable"}`,
+    });
     return { ok: true };
   });
 
@@ -73,8 +109,17 @@ export const actualizarIncidencia = createServerFn({ method: "POST" })
     if (cambios.estado === "en_proceso") patch["primera_respuesta_at"] = new Date().toISOString();
     if (cambios.estado === "resuelta" || cambios.estado === "cerrada")
       patch["resuelta_at"] = new Date().toISOString();
+    if (cambios.estado && cambios.estado !== "abierta") patch["asignado_a"] = context.userId;
     const { error } = await context.supabase.from("incidents").update(limpiar(patch)).eq("id", id);
     if (error) throw new Error(error.message);
+    if (cambios.estado) {
+      await context.supabase.from("incident_events").insert({
+        incident_id: id,
+        actor_id: context.userId,
+        tipo: "estado",
+        descripcion: `Estado actualizado a "${cambios.estado.replace("_", " ")}"`,
+      });
+    }
     return { ok: true };
   });
 
@@ -216,14 +261,49 @@ export const listarPedidos = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+export const listarEventosPedido = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => idSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: eventos, error } = await context.supabase
+      .from("request_events")
+      .select("*")
+      .eq("request_id", data.id)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    const ids = [...new Set((eventos ?? []).map((e) => e.actor_id).filter(Boolean))] as string[];
+    const perfiles = ids.length
+      ? (await context.supabase.from("profiles").select("id, nombre").in("id", ids)).data ?? []
+      : [];
+    return (eventos ?? []).map((e) => ({
+      ...e,
+      actor: perfiles.find((p) => p.id === e.actor_id)?.nombre ?? null,
+    }));
+  });
+
 export const crearPedido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => pedidoCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { supabase, userId } = context;
+    const { data: creado, error } = await supabase
       .from("internal_requests")
-      .insert(limpiar({ ...data, created_by: context.userId }));
+      .insert(limpiar({ ...data, created_by: userId }))
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
+    const nombres = (await supabase.from("areas").select("id, nombre")).data ?? [];
+    const nombreArea = (id?: string | null) => nombres.find((a) => a.id === id)?.nombre ?? null;
+    await supabase.from("request_events").insert({
+      request_id: creado.id,
+      actor_id: userId,
+      tipo: "creado",
+      descripcion: `Pedido solicitado por ${nombreArea(data.area_solicitante) ?? "un área"} hacia ${nombreArea(data.area_destino) ?? "sin destino"}${
+        data.prioridad === "alta" || data.prioridad === "critica"
+          ? " · requiere aprobación de gerencia"
+          : " · circulación directa entre áreas"
+      }`,
+    });
     return { ok: true };
   });
 
@@ -231,14 +311,41 @@ export const cambiarEstadoPedido = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => pedidoEstadoSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const pedido = await supabase
+      .from("internal_requests")
+      .select("prioridad, estado, created_by")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!pedido.data) throw new Error("Pedido no encontrado");
+
+    const requiereAprobacion =
+      pedido.data.prioridad === "alta" || pedido.data.prioridad === "critica";
+    const { data: esGerencia } = await supabase.rpc("es_gerencia", { _user_id: userId });
+
+    if (data.estado === "aprobado" || data.estado === "rechazado") {
+      if (!esGerencia) throw new Error("Solo gerencia puede aprobar o rechazar pedidos");
+    }
+    if (requiereAprobacion && !esGerencia && data.estado !== "solicitado") {
+      // Un pedido de prioridad alta necesita el visto bueno de gerencia antes de avanzar.
+      if (!["aprobado", "en_proceso", "entregado", "cerrado"].includes(pedido.data.estado)) {
+        throw new Error("Este pedido requiere aprobación de gerencia antes de avanzar");
+      }
+    }
+
     const patch: Record<string, unknown> = { estado: data.estado };
-    if (data.estado === "aprobado" || data.estado === "rechazado")
-      patch["aprobado_por"] = context.userId;
-    const { error } = await context.supabase
+    if (data.estado === "aprobado" || data.estado === "rechazado") patch["aprobado_por"] = userId;
+    const { error } = await supabase
       .from("internal_requests")
       .update(limpiar(patch))
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    await supabase.from("request_events").insert({
+      request_id: data.id,
+      actor_id: userId,
+      tipo: "estado",
+      descripcion: `Estado actualizado a "${data.estado.replace("_", " ")}"`,
+    });
     return { ok: true };
   });
 
@@ -291,4 +398,26 @@ export const crearArea = createServerFn({ method: "POST" })
     const { error } = await context.supabase.from("areas").insert(limpiar(data));
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/** Acuses de lectura de un comunicado (visible para perfiles autorizados por RLS). */
+export const listarLecturas = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => idSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: lecturas, error } = await context.supabase
+      .from("announcement_reads")
+      .select("user_id, leido_at")
+      .eq("announcement_id", data.id)
+      .order("leido_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    const ids = (lecturas ?? []).map((l) => l.user_id);
+    const perfiles = ids.length
+      ? (await context.supabase.from("profiles").select("id, nombre, email").in("id", ids)).data ?? []
+      : [];
+    return (lecturas ?? []).map((l) => ({
+      ...l,
+      nombre: perfiles.find((p) => p.id === l.user_id)?.nombre ?? "Colaborador",
+      email: perfiles.find((p) => p.id === l.user_id)?.email ?? null,
+    }));
   });
