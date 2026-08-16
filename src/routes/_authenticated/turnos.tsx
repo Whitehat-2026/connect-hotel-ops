@@ -39,6 +39,8 @@ function Turnos() {
   });
   const [firmas, setFirmas] = useState<Record<string, string>>({});
 
+  const pendientesValidos = form.pendientes.trim().length > 0;
+
   const { data = [] } = useQuery({ queryKey: ["turnos"], queryFn: () => listar() });
 
   const mCrear = useMutation({
@@ -65,12 +67,16 @@ function Turnos() {
     const parsed = turnoCrearSchema.safeParse({
       ...form,
       area_id: form.area_id || null,
-      pendientes: form.pendientes || undefined,
+      pendientes: form.pendientes,
       vips: form.vips || undefined,
       incidencias_abiertas: form.incidencias_abiertas || undefined,
       notas: form.notas || undefined,
       firma_entrega: form.firma_entrega || undefined,
     });
+    if (!pendientesValidos) {
+      toast.error("Indique los pendientes del turno antes de realizar la entrega.");
+      return;
+    }
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Datos inválidos");
       return;
@@ -94,12 +100,31 @@ function Turnos() {
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
-        <textarea className="field" rows={3} placeholder="Pendientes del turno" value={form.pendientes} onChange={(e) => setForm({ ...form, pendientes: e.target.value })} maxLength={2000} />
+        <div>
+          <textarea
+            className="field w-full"
+            rows={3}
+            required
+            aria-invalid={!pendientesValidos}
+            placeholder="Pendientes del turno *"
+            value={form.pendientes}
+            onChange={(e) => setForm({ ...form, pendientes: e.target.value })}
+            maxLength={2000}
+          />
+          {!pendientesValidos ? (
+            <p className="mt-1 text-xs text-warning">
+              Indique los pendientes del turno antes de realizar la entrega.
+            </p>
+          ) : null}
+        </div>
         <textarea className="field" rows={3} placeholder="VIPs y atenciones especiales" value={form.vips} onChange={(e) => setForm({ ...form, vips: e.target.value })} maxLength={2000} />
         <textarea className="field" rows={3} placeholder="Incidencias abiertas" value={form.incidencias_abiertas} onChange={(e) => setForm({ ...form, incidencias_abiertas: e.target.value })} maxLength={2000} />
         <textarea className="field" rows={3} placeholder="Notas adicionales" value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} maxLength={2000} />
         <input className="field" placeholder="Firma de quien entrega (nombre completo)" value={form.firma_entrega} onChange={(e) => setForm({ ...form, firma_entrega: e.target.value })} maxLength={120} />
-        <button className="btn-gold hover:btn-gold-hover px-4 py-2 text-sm" disabled={mCrear.isPending}>
+        <button
+          className="btn-gold hover:btn-gold-hover px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={mCrear.isPending || !pendientesValidos}
+        >
           {mCrear.isPending ? "Guardando…" : "Entregar turno"}
         </button>
       </form>
