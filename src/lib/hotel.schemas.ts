@@ -37,7 +37,11 @@ export const incidenciaActualizarSchema = z.object({
 export const turnoCrearSchema = z.object({
   area_id: z.string().uuid().nullable().optional(),
   turno: z.string().trim().min(3).max(30),
-  pendientes: z.string().trim().max(2000).optional(),
+  pendientes: z
+    .string()
+    .trim()
+    .min(1, "Indique los pendientes del turno antes de realizar la entrega.")
+    .max(2000),
   vips: z.string().trim().max(2000).optional(),
   incidencias_abiertas: z.string().trim().max(2000).optional(),
   notas: z.string().trim().max(2000).optional(),
