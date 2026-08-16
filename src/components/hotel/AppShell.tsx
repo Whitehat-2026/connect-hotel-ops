@@ -16,23 +16,25 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSesion } from "@/hooks/use-sesion";
+import { useNotificaciones, type Modulo } from "@/hooks/use-notificaciones";
 import { RoleBadge } from "./Badges";
 import { Logo } from "./Logo";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/incidencias", label: "Incidencias", icon: AlertTriangle },
-  { to: "/turnos", label: "Turnos", icon: ClipboardList },
-  { to: "/comunicados", label: "Comunicados", icon: Megaphone },
+  { to: "/incidencias", label: "Incidencias", icon: AlertTriangle, modulo: "incidencias" },
+  { to: "/turnos", label: "Turnos", icon: ClipboardList, modulo: "turnos" },
+  { to: "/comunicados", label: "Comunicados", icon: Megaphone, modulo: "comunicados" },
   { to: "/vip", label: "VIP", icon: Crown },
   { to: "/checklists", label: "Checklists", icon: CheckSquare },
-  { to: "/pedidos", label: "Pedidos", icon: PackageSearch },
+  { to: "/pedidos", label: "Pedidos", icon: PackageSearch, modulo: "pedidos" },
   { to: "/estrategia", label: "Estrategia", icon: LineChart },
   { to: "/admin", label: "Administración", icon: Shield },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { sesion, roles } = useSesion();
+  const { contadores } = useNotificaciones();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -89,6 +91,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <item.icon className="h-3.5 w-3.5" />
               {item.label}
+              {"modulo" in item && contadores[item.modulo as Modulo] > 0 ? (
+                <span
+                  aria-label={`${contadores[item.modulo as Modulo]} novedades sin revisar`}
+                  className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full border border-primary/60 bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary"
+                >
+                  {contadores[item.modulo as Modulo]}
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>

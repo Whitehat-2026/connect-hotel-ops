@@ -7,6 +7,7 @@ import {
   incidenciaActualizarSchema,
   incidenciaCrearSchema,
   itemToggleSchema,
+  moduloVistoSchema,
   pedidoCrearSchema,
   pedidoEstadoSchema,
   rolAsignarSchema,
@@ -420,4 +421,64 @@ export const listarLecturas = createServerFn({ method: "GET" })
       nombre: perfiles.find((p) => p.id === l.user_id)?.nombre ?? "Colaborador",
       email: perfiles.find((p) => p.id === l.user_id)?.email ?? null,
     }));
+  });
+
+/** Contadores de novedades por módulo (siempre bajo RLS del usuario). */
+export const contarNotificaciones = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const vistas = (await supabase
+      .from("module_views")
+      .select("modulo, last_seen_at")
+      .eq("user_id", userId)).data ?? [];
+    const desde = (m: string) =>
+      vistas.find((v) => v.modulo === m)?.last_seen_at ?? "1970-01-01T00:00:00.000Z";
+
+    const [incidencias, pedidos, comunicados, lecturas, turnos] = await Promise.all([
+      supabase
+        .from("incidents")
+        .select("id", { count: "exact", head: true })
+        .gt("updated_at", desde("incidencias")),
+      supabase
+        .from("internal_requests")
+        .select("id", { count: "exact", head: true })
+        .gt("updated_at", desde("pedidos")),
+      supabase.from("announcements").select("id"),
+      supabase.from("announcement_reads").select("announcement_id").eq("user_id", userId),
+      supabase
+        .from("shift_handovers")
+        .select("id, created_at, firma_recepcion"),
+    ]);
+
+    const leidos = new Set((lecturas.data ?? []).map((l) => l.announcement_id));
+    const sinLeer = (comunicados.data ?? []).filter((c) => !leidos.has(c.id)).length;
+    const desdeTurnos = desde("turnos");
+    const turnosPendientes = (turnos.data ?? []).filter(
+      (t) => !t.firma_recepcion || t.created_at > desdeTurnos,
+    ).length;
+
+    return {
+      incidencias: incidencias.count ?? 0,
+      pedidos: pedidos.count ?? 0,
+      comunicados: sinLeer,
+      turnos: turnosPendientes,
+    };
+  });
+
+/** Marca un módulo como revisado por el usuario (no altera los datos del módulo). */
+export const marcarModuloVisto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => moduloVistoSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("module_views").upsert(
+      {
+        user_id: context.userId,
+        modulo: data.modulo,
+        last_seen_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,modulo" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
