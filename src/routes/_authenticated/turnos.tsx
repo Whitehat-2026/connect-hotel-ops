@@ -9,6 +9,7 @@ import { AreaBadge } from "@/components/hotel/Badges";
 import { useSesion } from "@/hooks/use-sesion";
 import { crearTurno, firmarTurno, listarTurnos } from "@/lib/hotel.functions";
 import { turnoCrearSchema } from "@/lib/hotel.schemas";
+import { fechaHora } from "@/lib/fecha";
 
 export const Route = createFileRoute("/_authenticated/turnos")({
   head: () => ({
@@ -140,7 +141,7 @@ function Turnos() {
                 <AreaBadge nombre={t.areas?.nombre ?? null} />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {new Date(t.created_at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}
+                {fechaHora(t.created_at)}
               </p>
               <dl className="mt-4 space-y-3 text-sm">
                 {[
@@ -162,7 +163,7 @@ function Turnos() {
                 {t.firma_recepcion ? (
                   <p className="mt-1 text-xs text-success">
                     Recibido por {t.firma_recepcion} ·{" "}
-                    {new Date(t.updated_at).toLocaleString("es-MX")}
+                    {fechaHora(t.updated_at)}
                   </p>
                 ) : (
                   <div className="mt-2 flex gap-2">
