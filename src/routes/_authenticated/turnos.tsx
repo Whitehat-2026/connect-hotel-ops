@@ -163,7 +163,7 @@ function Turnos() {
                 {t.firma_recepcion ? (
                   <p className="mt-1 text-xs text-success">
                     Recibido por {t.firma_recepcion} ·{" "}
-                    {new Date(t.updated_at).toLocaleString("es-MX")}
+                    {fechaHora(t.updated_at)}
                   </p>
                 ) : (
                   <div className="mt-2 flex gap-2">
