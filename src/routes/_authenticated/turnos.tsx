@@ -9,6 +9,7 @@ import { AreaBadge } from "@/components/hotel/Badges";
 import { useSesion } from "@/hooks/use-sesion";
 import { crearTurno, firmarTurno, listarTurnos } from "@/lib/hotel.functions";
 import { turnoCrearSchema } from "@/lib/hotel.schemas";
+import { fechaHora } from "@/lib/fecha";
 
 export const Route = createFileRoute("/_authenticated/turnos")({
   head: () => ({
