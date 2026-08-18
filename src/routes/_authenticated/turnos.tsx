@@ -141,7 +141,7 @@ function Turnos() {
                 <AreaBadge nombre={t.areas?.nombre ?? null} />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {new Date(t.created_at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}
+                {fechaHora(t.created_at)}
               </p>
               <dl className="mt-4 space-y-3 text-sm">
                 {[
