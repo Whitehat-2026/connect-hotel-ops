@@ -28,8 +28,12 @@ export const accesoDemo = createServerFn({ method: "POST" })
       .eq("email", data.email)
       .maybeSingle();
 
+    // Rechazo controlado (no excepción): evita ruido de error en tiempo de ejecución.
     if (!autorizado.data) {
-      throw new Error("Usuario no autorizado. Verifique el correo o contacte con Administración.");
+      return {
+        ok: false as const,
+        mensaje: "Usuario no autorizado. Verifique el correo o contacte con Administración.",
+      };
     }
 
     // El perfil debe seguir activo para poder iniciar sesión.
@@ -39,7 +43,7 @@ export const accesoDemo = createServerFn({ method: "POST" })
       .eq("email", data.email)
       .maybeSingle();
     if (perfilExistente.data && perfilExistente.data.activo === false) {
-      throw new Error("Usuario desactivado. Contacte con Administración.");
+      return { ok: false as const, mensaje: "Usuario desactivado. Contacte con Administración." };
     }
 
     async function generar() {
@@ -101,5 +105,5 @@ export const accesoDemo = createServerFn({ method: "POST" })
       }
     }
 
-    return { tokenHash };
+    return { ok: true as const, tokenHash };
   });
