@@ -25,7 +25,7 @@ const nav = [
   { to: "/incidencias", label: "Incidencias", icon: AlertTriangle, modulo: "incidencias" },
   { to: "/turnos", label: "Turnos", icon: ClipboardList, modulo: "turnos" },
   { to: "/comunicados", label: "Comunicados", icon: Megaphone, modulo: "comunicados" },
-  { to: "/vip", label: "VIP", icon: Crown },
+  { to: "/vip", label: "VIP", icon: Crown, soloVip: true },
   { to: "/checklists", label: "Checklists", icon: CheckSquare },
   { to: "/pedidos", label: "Pedidos", icon: PackageSearch, modulo: "pedidos" },
   { to: "/estrategia", label: "Estrategia", icon: LineChart },
@@ -33,7 +33,7 @@ const nav = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { sesion, roles } = useSesion();
+  const { sesion, roles, puedeVerVip } = useSesion();
   const { contadores } = useNotificaciones();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -81,7 +81,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 pb-2">
-          {nav.map((item) => (
+          {nav.filter((item) => !("soloVip" in item) || puedeVerVip).map((item) => (
             <Link
               key={item.to}
               to={item.to}
