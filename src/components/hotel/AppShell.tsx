@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import {
@@ -15,6 +15,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { iniciarCierreSesion } from "@/lib/sesion-estado";
 import { useSesion } from "@/hooks/use-sesion";
 import { useNotificaciones, type Modulo } from "@/hooks/use-notificaciones";
 import { RoleBadge } from "./Badges";
@@ -35,16 +36,20 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { sesion, roles, puedeVerVip } = useSesion();
   const { contadores } = useNotificaciones();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   async function cerrarSesion() {
+    // 1) bloquear nuevas llamadas protegidas, 2) cancelar/limpiar caché,
+    // 3) invalidar la sesión, 4) salir con recarga limpia (sin bfcache).
+    iniciarCierreSesion();
     await queryClient.cancelQueries();
+    queryClient.removeQueries();
     queryClient.clear();
     await supabase.auth.signOut();
     toast.success("Sesión cerrada de forma segura.");
-    navigate({ to: "/auth", replace: true });
+    window.location.replace("/auth");
   }
+
 
   return (
     <div className="min-h-screen bg-background">

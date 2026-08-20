@@ -1,5 +1,6 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { estaCerrandoSesion, SesionCerradaError } from "@/lib/sesion-estado";
 
 /**
  * Adjunta el bearer token a cada server function desde el cliente.
@@ -11,10 +12,14 @@ export const asegurarTokenSupabase = createMiddleware({ type: "function" }).clie
   async ({ next }) => {
     if (typeof window === "undefined") return next();
 
+    // Durante el cierre de sesión no se envía ninguna llamada protegida.
+    if (estaCerrandoSesion()) throw new SesionCerradaError();
+
     let token = (await supabase.auth.getSession()).data.session?.access_token;
     if (!token) {
       token = (await supabase.auth.refreshSession()).data.session?.access_token;
     }
+
 
     if (!token) {
       // Sin sesión no llamamos al servidor: evitamos el 500
