@@ -73,11 +73,7 @@ export const accesoDemo = createServerFn({ method: "POST" })
       usuarioId = lista.data?.users.find((u) => u.email?.toLowerCase() === data.email)?.id;
     }
     if (usuarioId) {
-      const cuenta = await supabaseAdmin
-        .from("demo_accounts")
-        .select("role, area_codigo, nombre")
-        .eq("email", data.email)
-        .maybeSingle();
+      const cuenta = autorizado;
 
       const codigo = cuenta.data?.area_codigo ?? "COC";
       const area = await supabaseAdmin.from("areas").select("id").eq("codigo", codigo).maybeSingle();
