@@ -43,7 +43,7 @@ export const accesoDemo = createServerFn({ method: "POST" })
       .eq("email", data.email)
       .maybeSingle();
     if (perfilExistente.data && perfilExistente.data.activo === false) {
-      throw new Error("Usuario desactivado. Contacte con Administración.");
+      return { ok: false as const, mensaje: "Usuario desactivado. Contacte con Administración." };
     }
 
     async function generar() {
