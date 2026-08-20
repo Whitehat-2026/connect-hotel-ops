@@ -102,6 +102,7 @@ export type Database = {
           created_at: string
           descripcion: string | null
           id: string
+          nivel: Database["public"]["Enums"]["nivel_sensibilidad"]
           nombre: string
           updated_at: string
         }
@@ -110,6 +111,7 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           id?: string
+          nivel?: Database["public"]["Enums"]["nivel_sensibilidad"]
           nombre: string
           updated_at?: string
         }
@@ -118,10 +120,67 @@ export type Database = {
           created_at?: string
           descripcion?: string | null
           id?: string
+          nivel?: Database["public"]["Enums"]["nivel_sensibilidad"]
           nombre?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      audit_log: {
+        Row: {
+          accion: string
+          actor_area: string | null
+          actor_id: string | null
+          actor_nombre: string | null
+          actor_rol: string | null
+          aprobado_por: string | null
+          categoria: string
+          created_at: string
+          detalle: string | null
+          id: string
+          recurso: string | null
+          recurso_id: string | null
+          resultado: string
+        }
+        Insert: {
+          accion: string
+          actor_area?: string | null
+          actor_id?: string | null
+          actor_nombre?: string | null
+          actor_rol?: string | null
+          aprobado_por?: string | null
+          categoria?: string
+          created_at?: string
+          detalle?: string | null
+          id?: string
+          recurso?: string | null
+          recurso_id?: string | null
+          resultado?: string
+        }
+        Update: {
+          accion?: string
+          actor_area?: string | null
+          actor_id?: string | null
+          actor_nombre?: string | null
+          actor_rol?: string | null
+          aprobado_por?: string | null
+          categoria?: string
+          created_at?: string
+          detalle?: string | null
+          id?: string
+          recurso?: string | null
+          recurso_id?: string | null
+          resultado?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_actor_area_fkey"
+            columns: ["actor_area"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checklist_items: {
         Row: {
@@ -426,13 +485,58 @@ export type Database = {
         }
         Relationships: []
       }
+      privilege_requests: {
+        Row: {
+          aprobado_por: string | null
+          comentario: string | null
+          created_at: string
+          estado: string
+          id: string
+          motivo: string
+          resuelto_at: string | null
+          rol_solicitado: Database["public"]["Enums"]["app_role"]
+          solicitado_por: string | null
+          target_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          aprobado_por?: string | null
+          comentario?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          motivo: string
+          resuelto_at?: string | null
+          rol_solicitado: Database["public"]["Enums"]["app_role"]
+          solicitado_por?: string | null
+          target_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          aprobado_por?: string | null
+          comentario?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          motivo?: string
+          resuelto_at?: string | null
+          rol_solicitado?: Database["public"]["Enums"]["app_role"]
+          solicitado_por?: string | null
+          target_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           activo: boolean
           area_id: string | null
           created_at: string
+          desactivado_at: string | null
+          desactivado_por: string | null
           email: string | null
           id: string
+          motivo_baja: string | null
           nombre: string
           puesto: string | null
           telefono: string | null
@@ -442,8 +546,11 @@ export type Database = {
           activo?: boolean
           area_id?: string | null
           created_at?: string
+          desactivado_at?: string | null
+          desactivado_por?: string | null
           email?: string | null
           id: string
+          motivo_baja?: string | null
           nombre?: string
           puesto?: string | null
           telefono?: string | null
@@ -453,8 +560,11 @@ export type Database = {
           activo?: boolean
           area_id?: string | null
           created_at?: string
+          desactivado_at?: string | null
+          desactivado_por?: string | null
           email?: string | null
           id?: string
+          motivo_baja?: string | null
           nombre?: string
           puesto?: string | null
           telefono?: string | null
@@ -668,6 +778,7 @@ export type Database = {
         | "en_proceso"
         | "entregado"
         | "cerrado"
+      nivel_sensibilidad: "operativo" | "restringido" | "critico" | "maximo"
       prioridad: "baja" | "media" | "alta" | "critica"
     }
     CompositeTypes: {
@@ -813,6 +924,7 @@ export const Constants = {
         "entregado",
         "cerrado",
       ],
+      nivel_sensibilidad: ["operativo", "restringido", "critico", "maximo"],
       prioridad: ["baja", "media", "alta", "critica"],
     },
   },
