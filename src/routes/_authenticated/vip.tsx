@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/vip")({
     ],
   }),
   component: () => (
-    <ProtectedRoute roles={["admin", "gerente"]}>
+    <ProtectedRoute roles={["gerente"]}>
       <Vip />
     </ProtectedRoute>
   ),

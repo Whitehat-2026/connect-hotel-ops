@@ -65,7 +65,7 @@ export const accesoDemo = createServerFn({ method: "POST" })
     /**
      * Aprovisionamiento de perfil y rol.
      * El rol NUNCA se deduce del texto del correo: se lee de la tabla interna
-     * `demo_accounts`. Cualquier correo no listado entra como `colaborador`.
+     * `demo_accounts`, ya validada arriba como lista blanca estricta.
      */
     let usuarioId = res.data?.user?.id;
     if (!usuarioId) {
