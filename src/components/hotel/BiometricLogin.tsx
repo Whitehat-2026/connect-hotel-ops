@@ -40,10 +40,12 @@ export function BiometricLogin() {
       setFase("verificado");
       setMensaje("✓ Identidad verificada");
       timer.current = setTimeout(() => navigate({ to: "/dashboard", replace: true }), 900);
-    } catch {
+    } catch (e) {
+      const bruto = e instanceof Error ? e.message : "";
+      const conocido = /no autorizado|desactivado/i.test(bruto) ? bruto : "";
       setFase("error");
-      setMensaje("No fue posible verificar la identidad. Intente nuevamente.");
-      timer.current = setTimeout(() => setFase(null), 2200);
+      setMensaje(conocido || "No fue posible verificar la identidad. Intente nuevamente.");
+      timer.current = setTimeout(() => { setFase(null); setError(conocido); }, 2600);
     }
   }
 
