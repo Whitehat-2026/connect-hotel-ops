@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireUsuarioActivo } from "./auth-activo.middleware";
 import {
   areaCrearSchema,
   comunicadoCrearSchema,
@@ -21,7 +21,7 @@ import { conReintento, limpiar } from "./hotel.server";
 /** Sesión: perfil, roles y catálogo de áreas. */
 
 export const obtenerSesion = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const [perfil, roles, areas] = await conReintento(
@@ -44,7 +44,7 @@ export const obtenerSesion = createServerFn({ method: "GET" })
 
 
 export const listarIncidencias = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("incidents")
@@ -57,7 +57,7 @@ export const listarIncidencias = createServerFn({ method: "GET" })
   });
 
 export const listarEventosIncidencia = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { data: eventos, error } = await context.supabase
@@ -77,7 +77,7 @@ export const listarEventosIncidencia = createServerFn({ method: "GET" })
   });
 
 export const crearIncidencia = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => incidenciaCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -102,7 +102,7 @@ export const crearIncidencia = createServerFn({ method: "POST" })
   });
 
 export const actualizarIncidencia = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => incidenciaActualizarSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { id, ...cambios } = data;
@@ -125,7 +125,7 @@ export const actualizarIncidencia = createServerFn({ method: "POST" })
   });
 
 export const listarTurnos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("shift_handovers")
@@ -137,7 +137,7 @@ export const listarTurnos = createServerFn({ method: "GET" })
   });
 
 export const crearTurno = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => turnoCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
@@ -148,7 +148,7 @@ export const crearTurno = createServerFn({ method: "POST" })
   });
 
 export const firmarTurno = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => turnoFirmarSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
@@ -160,7 +160,7 @@ export const firmarTurno = createServerFn({ method: "POST" })
   });
 
 export const listarComunicados = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const [comunicados, lecturas] = await Promise.all([
       context.supabase
@@ -178,7 +178,7 @@ export const listarComunicados = createServerFn({ method: "GET" })
   });
 
 export const crearComunicado = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => comunicadoCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
@@ -189,7 +189,7 @@ export const crearComunicado = createServerFn({ method: "POST" })
   });
 
 export const marcarLeido = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
@@ -203,7 +203,7 @@ export const marcarLeido = createServerFn({ method: "POST" })
   });
 
 export const listarVips = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("vip_alerts")
@@ -214,7 +214,7 @@ export const listarVips = createServerFn({ method: "GET" })
   });
 
 export const crearVip = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => vipCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
@@ -225,7 +225,7 @@ export const crearVip = createServerFn({ method: "POST" })
   });
 
 export const listarChecklists = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("checklists")
@@ -236,7 +236,7 @@ export const listarChecklists = createServerFn({ method: "GET" })
   });
 
 export const alternarItem = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => itemToggleSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
@@ -252,7 +252,7 @@ export const alternarItem = createServerFn({ method: "POST" })
   });
 
 export const listarPedidos = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("internal_requests")
@@ -263,7 +263,7 @@ export const listarPedidos = createServerFn({ method: "GET" })
   });
 
 export const listarEventosPedido = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { data: eventos, error } = await context.supabase
@@ -283,7 +283,7 @@ export const listarEventosPedido = createServerFn({ method: "GET" })
   });
 
 export const crearPedido = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => pedidoCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -309,7 +309,7 @@ export const crearPedido = createServerFn({ method: "POST" })
   });
 
 export const cambiarEstadoPedido = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => pedidoEstadoSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -351,7 +351,7 @@ export const cambiarEstadoPedido = createServerFn({ method: "POST" })
   });
 
 export const listarUsuarios = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const [perfiles, roles] = await Promise.all([
       context.supabase.from("profiles").select("*, areas(nombre, codigo)").order("nombre"),
@@ -365,7 +365,7 @@ export const listarUsuarios = createServerFn({ method: "GET" })
   });
 
 export const asignarRol = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => rolAsignarSchema.parse(input))
   .handler(async ({ data, context }) => {
     const borrado = await context.supabase
@@ -381,7 +381,7 @@ export const asignarRol = createServerFn({ method: "POST" })
   });
 
 export const cambiarActivo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => usuarioActivoSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
@@ -393,7 +393,7 @@ export const cambiarActivo = createServerFn({ method: "POST" })
   });
 
 export const crearArea = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => areaCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("areas").insert(limpiar(data));
@@ -403,7 +403,7 @@ export const crearArea = createServerFn({ method: "POST" })
 
 /** Acuses de lectura de un comunicado (visible para perfiles autorizados por RLS). */
 export const listarLecturas = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { data: lecturas, error } = await context.supabase
@@ -425,7 +425,7 @@ export const listarLecturas = createServerFn({ method: "GET" })
 
 /** Contadores de novedades por módulo (siempre bajo RLS del usuario). */
 export const contarNotificaciones = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const vistas = (await supabase
@@ -468,7 +468,7 @@ export const contarNotificaciones = createServerFn({ method: "GET" })
 
 /** Marca un módulo como revisado por el usuario (no altera los datos del módulo). */
 export const marcarModuloVisto = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => moduloVistoSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("module_views").upsert(

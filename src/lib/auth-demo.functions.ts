@@ -17,6 +17,31 @@ export const accesoDemo = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    /**
+     * LISTA BLANCA ESTRICTA: sólo los correos registrados exactamente en
+     * `demo_accounts` (normalizando únicamente espacios y mayúsculas) pueden
+     * obtener sesión. No se crean cuentas desconocidas ni se deducen roles.
+     */
+    const autorizado = await supabaseAdmin
+      .from("demo_accounts")
+      .select("role, area_codigo, nombre")
+      .eq("email", data.email)
+      .maybeSingle();
+
+    if (!autorizado.data) {
+      throw new Error("Usuario no autorizado. Verifique el correo o contacte con Administración.");
+    }
+
+    // El perfil debe seguir activo para poder iniciar sesión.
+    const perfilExistente = await supabaseAdmin
+      .from("profiles")
+      .select("activo")
+      .eq("email", data.email)
+      .maybeSingle();
+    if (perfilExistente.data && perfilExistente.data.activo === false) {
+      throw new Error("Usuario desactivado. Contacte con Administración.");
+    }
+
     async function generar() {
       return supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email: data.email });
     }
@@ -40,7 +65,7 @@ export const accesoDemo = createServerFn({ method: "POST" })
     /**
      * Aprovisionamiento de perfil y rol.
      * El rol NUNCA se deduce del texto del correo: se lee de la tabla interna
-     * `demo_accounts`. Cualquier correo no listado entra como `colaborador`.
+     * `demo_accounts`, ya validada arriba como lista blanca estricta.
      */
     let usuarioId = res.data?.user?.id;
     if (!usuarioId) {
@@ -48,11 +73,7 @@ export const accesoDemo = createServerFn({ method: "POST" })
       usuarioId = lista.data?.users.find((u) => u.email?.toLowerCase() === data.email)?.id;
     }
     if (usuarioId) {
-      const cuenta = await supabaseAdmin
-        .from("demo_accounts")
-        .select("role, area_codigo, nombre")
-        .eq("email", data.email)
-        .maybeSingle();
+      const cuenta = autorizado;
 
       const codigo = cuenta.data?.area_codigo ?? "COC";
       const area = await supabaseAdmin.from("areas").select("id").eq("codigo", codigo).maybeSingle();

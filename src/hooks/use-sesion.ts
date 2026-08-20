@@ -22,5 +22,7 @@ export function useSesion() {
     roles,
     tieneRol: (...r: Rol[]) => r.some((x) => roles.includes(x)),
     esGerencia: roles.includes("admin") || roles.includes("gerente"),
+    /** Acceso a expedientes VIP: exclusivo del rol gerente (admin NO lo tiene). */
+    puedeVerVip: roles.includes("gerente"),
   };
 }

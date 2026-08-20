@@ -650,6 +650,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      puede_ver_vip: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "gerente" | "supervisor" | "colaborador"
