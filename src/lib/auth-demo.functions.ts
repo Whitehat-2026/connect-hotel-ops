@@ -105,5 +105,5 @@ export const accesoDemo = createServerFn({ method: "POST" })
       }
     }
 
-    return { tokenHash };
+    return { ok: true as const, tokenHash };
   });
