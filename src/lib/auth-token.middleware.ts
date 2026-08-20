@@ -17,12 +17,14 @@ export const asegurarTokenSupabase = createMiddleware({ type: "function" }).clie
     }
 
     if (!token) {
+      // Sin sesión: las funciones públicas (acceso demo) siguen funcionando.
       if (window.location.pathname !== "/auth") {
         window.location.replace("/auth");
+        return new Promise(() => {}) as never;
       }
-      // Evita el error del servidor: la navegación ya está en curso.
-      return new Promise(() => {}) as never;
+      return next();
     }
+
 
     return next({ headers: { Authorization: `Bearer ${token}` } });
   },
