@@ -34,8 +34,14 @@ export function BiometricLogin() {
     setMensaje("Verificando identidad...");
 
     try {
-      const { tokenHash } = await acceso({ data: { email: valor } });
-      const { error: err } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "email" });
+      const res = await acceso({ data: { email: valor } });
+      if (!res.ok) {
+        setFase("error");
+        setMensaje(res.mensaje);
+        timer.current = setTimeout(() => { setFase(null); setError(res.mensaje); }, 2600);
+        return;
+      }
+      const { error: err } = await supabase.auth.verifyOtp({ token_hash: res.tokenHash, type: "email" });
       if (err) throw err;
       setFase("verificado");
       setMensaje("✓ Identidad verificada");
