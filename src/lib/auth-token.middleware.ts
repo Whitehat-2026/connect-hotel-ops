@@ -17,9 +17,11 @@ export const asegurarTokenSupabase = createMiddleware({ type: "function" }).clie
     }
 
     if (!token) {
-      // Las funciones públicas (acceso demo en /auth) siguen funcionando.
+      // Sin sesión no llamamos al servidor: evitamos el 500
+      // "Unauthorized: No authorization header provided" (pantalla en blanco).
       if (window.location.pathname !== "/auth") {
         window.location.replace("/auth");
+        throw new Error("Sesión expirada. Vuelve a iniciar sesión.");
       }
       return next();
     }
