@@ -39,12 +39,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
   async function cerrarSesion() {
+    // 1) bloquear nuevas llamadas protegidas, 2) cancelar/limpiar caché,
+    // 3) invalidar la sesión, 4) salir con recarga limpia (sin bfcache).
+    iniciarCierreSesion();
     await queryClient.cancelQueries();
+    queryClient.removeQueries();
     queryClient.clear();
     await supabase.auth.signOut();
     toast.success("Sesión cerrada de forma segura.");
-    navigate({ to: "/auth", replace: true });
+    window.location.replace("/auth");
   }
+
 
   return (
     <div className="min-h-screen bg-background">
