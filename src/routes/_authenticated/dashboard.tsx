@@ -28,6 +28,7 @@ import {
 } from "@/lib/hotel.functions";
 import { resumenGobernanza } from "@/lib/gobernanza.functions";
 import { fechaHora } from "@/lib/fecha";
+import { accionAuditoria, nivelArea, nombreActor } from "@/lib/etiquetas";
 import { useSesion } from "@/hooks/use-sesion";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -156,9 +157,11 @@ function Dashboard() {
         )}
 
         <section className="surface p-5 lg:col-span-2">
-          <h2 className="font-display text-xl">Pendientes prioritarios</h2>
+          <h2 className="font-display text-xl">
+            {esColaborador ? "Pendientes de mi área" : "Pendientes prioritarios"}
+          </h2>
           <ul className="mt-4 space-y-3">
-            {abiertas.slice(0, 6).map((i) => (
+            {(esColaborador ? incidenciasMiArea : abiertas).slice(0, 6).map((i) => (
               <li key={i.id} className="border-b border-border/60 pb-3 last:border-0">
                 <p className="text-sm">{i.titulo}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -168,7 +171,7 @@ function Dashboard() {
                 </div>
               </li>
             ))}
-            {abiertas.length === 0 ? (
+            {(esColaborador ? incidenciasMiArea : abiertas).length === 0 ? (
               <li className="text-sm text-muted-foreground">Sin pendientes abiertos. Operación en verde.</li>
             ) : null}
           </ul>
@@ -209,7 +212,7 @@ function Dashboard() {
             {gobernanza.data.areas.map((a) => (
               <span key={a.id} className="rounded-full border border-border px-3 py-1 text-[11px]">
                 {a.codigo} · {a.nombre}
-                <span className="ml-2 uppercase tracking-[0.15em] text-primary/80">{a.nivel}</span>
+                <span className="ml-2 uppercase tracking-[0.15em] text-primary/80">{nivelArea(a.nivel)}</span>
               </span>
             ))}
           </div>
@@ -217,10 +220,10 @@ function Dashboard() {
           <ul className="mt-4 space-y-2">
             {gobernanza.data.eventosRecientes.map((e) => (
               <li key={e.id} className="border-b border-border/60 pb-2 text-sm last:border-0">
-                <span className="text-foreground">{e.accion.replace(/_/g, " ")}</span>
+                <span className="text-foreground">{accionAuditoria(e.accion)}</span>
                 <span className="text-xs text-muted-foreground">
                   {" "}
-                  · {e.actor_nombre ?? "—"} · {fechaHora(e.created_at)}
+                  · {nombreActor(e.actor_nombre)} · {fechaHora(e.created_at)}
                 </span>
               </li>
             ))}

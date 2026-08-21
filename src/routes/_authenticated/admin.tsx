@@ -22,6 +22,7 @@ import {
 import { areaCrearSchema } from "@/lib/hotel.schemas";
 import { usuarioAltaSchema } from "@/lib/gobernanza.schemas";
 import { fechaHora } from "@/lib/fecha";
+import { nivelArea } from "@/lib/etiquetas";
 import { useSesion } from "@/hooks/use-sesion";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -474,7 +475,7 @@ function Admin() {
                 </select>
               ) : (
                 <span className="text-[11px] uppercase tracking-[0.15em] text-primary/80">
-                  {a.nivel ?? "operativo"}
+                  {nivelArea(a.nivel)}
                 </span>
               )}
             </span>
