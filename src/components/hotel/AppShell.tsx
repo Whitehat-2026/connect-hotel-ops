@@ -30,8 +30,10 @@ const nav = [
   { to: "/checklists", label: "Checklists", icon: CheckSquare },
   { to: "/pedidos", label: "Pedidos", icon: PackageSearch, modulo: "pedidos" },
   { to: "/estrategia", label: "Estrategia", icon: LineChart },
+  { to: "/auditoria", label: "Auditoría", icon: ScrollText, soloAuditoria: true },
   { to: "/admin", label: "Administración", icon: Shield },
 ] as const;
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { sesion, roles, puedeVerVip } = useSesion();
