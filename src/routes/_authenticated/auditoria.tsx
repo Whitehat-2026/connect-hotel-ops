@@ -75,7 +75,7 @@ function Auditoria() {
     {
       key: "resultado",
       header: "Resultado",
-      render: (e) => <span className="text-xs">{e.resultado}</span>,
+      render: (e) => <span className="text-xs">{etiquetaResultado(e.resultado)}</span>,
     },
   ];
 
