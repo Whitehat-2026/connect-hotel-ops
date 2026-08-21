@@ -124,6 +124,12 @@ export const actualizarIncidencia = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Entregas de turno.
+ * Confidencialidad: el bloque de VIPs/atenciones especiales sólo se envía a
+ * perfiles autorizados a VIP (Gerencia). Para el resto se omite en el servidor,
+ * no sólo en la interfaz.
+ */
 export const listarTurnos = createServerFn({ method: "GET" })
   .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
@@ -133,8 +139,16 @@ export const listarTurnos = createServerFn({ method: "GET" })
       .order("fecha", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const { data: puedeVerVip } = await context.supabase.rpc("puede_ver_vip", {
+      _user_id: context.userId,
+    });
+    return (data ?? []).map((t) => ({
+      ...t,
+      vips: puedeVerVip ? t.vips : null,
+      vip_restringido: !puedeVerVip,
+    }));
   });
+
 
 export const crearTurno = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
