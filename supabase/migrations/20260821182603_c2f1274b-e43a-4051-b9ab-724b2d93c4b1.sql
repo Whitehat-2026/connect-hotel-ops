@@ -1,0 +1,2 @@
+ALTER TABLE public.module_views DROP CONSTRAINT module_views_modulo_check;
+ALTER TABLE public.module_views ADD CONSTRAINT module_views_modulo_check CHECK (modulo = ANY (ARRAY['incidencias'::text,'pedidos'::text,'comunicados'::text,'turnos'::text,'administracion'::text]));

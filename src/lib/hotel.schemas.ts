@@ -107,5 +107,5 @@ export const areaCrearSchema = z.object({
 
 export const idSchema = z.object({ id: z.string().uuid() });
 
-export const moduloEnum = z.enum(["incidencias", "pedidos", "comunicados", "turnos"]);
+export const moduloEnum = z.enum(["incidencias", "pedidos", "comunicados", "turnos", "administracion"]);
 export const moduloVistoSchema = z.object({ modulo: moduloEnum });

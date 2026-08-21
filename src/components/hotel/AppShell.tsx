@@ -34,7 +34,7 @@ const nav = [
   { to: "/pedidos", label: "Pedidos", icon: PackageSearch, modulo: "pedidos" },
   { to: "/estrategia", label: "Estrategia", icon: LineChart },
   { to: "/auditoria", label: "Auditoría", icon: ScrollText, soloAuditoria: true },
-  { to: "/admin", label: "Administración", icon: Shield, soloAdmin: true },
+  { to: "/admin", label: "Administración", icon: Shield, soloAdmin: true, modulo: "administracion" },
 ] as const;
 
 
