@@ -7,11 +7,19 @@ export const rolCriticoEnum = z.enum(ROLES_CRITICOS);
 
 export const nivelEnum = z.enum(["operativo", "restringido", "critico", "maximo"]);
 
+/** Solicitud de alta: Administración la prepara, Gerencia la aprueba. */
 export const usuarioAltaSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
   nombre: z.string().trim().min(2).max(120),
   area_codigo: z.string().trim().min(2).max(10),
   role: rolNoCriticoEnum,
+  motivo: z.string().trim().max(500).optional(),
+});
+
+export const altaResolverSchema = z.object({
+  id: z.string().uuid(),
+  aprobar: z.boolean(),
+  comentario: z.string().trim().max(500).optional(),
 });
 
 export const privilegioSolicitarSchema = z.object({
