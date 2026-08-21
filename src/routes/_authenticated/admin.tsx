@@ -174,7 +174,7 @@ function Admin() {
   const RANGO: Record<string, number> = { gerente: 3, admin: 2, supervisor: 1, colaborador: 0 };
   const rangoDe = (roles: readonly string[]) => Math.max(0, ...roles.map((r) => RANGO[r] ?? 0));
   const miId = sesion?.perfil?.id;
-  const miRango = rangoDe(roles);
+  const miRango = rangoDe(misRoles);
   const adminsActivos = data.filter((u) => u.activo && u.roles.includes("admin")).length;
   const gerentesActivos = data.filter((u) => u.activo && u.roles.includes("gerente")).length;
 
