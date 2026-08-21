@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_requests: {
+        Row: {
+          aprobado_por: string | null
+          area_codigo: string
+          comentario: string | null
+          created_at: string
+          email: string
+          estado: string
+          id: string
+          motivo: string | null
+          nombre: string
+          resuelto_at: string | null
+          rol_solicitado: Database["public"]["Enums"]["app_role"]
+          solicitado_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          aprobado_por?: string | null
+          area_codigo: string
+          comentario?: string | null
+          created_at?: string
+          email: string
+          estado?: string
+          id?: string
+          motivo?: string | null
+          nombre: string
+          resuelto_at?: string | null
+          rol_solicitado: Database["public"]["Enums"]["app_role"]
+          solicitado_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aprobado_por?: string | null
+          area_codigo?: string
+          comentario?: string | null
+          created_at?: string
+          email?: string
+          estado?: string
+          id?: string
+          motivo?: string | null
+          nombre?: string
+          resuelto_at?: string | null
+          rol_solicitado?: Database["public"]["Enums"]["app_role"]
+          solicitado_por?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       announcement_reads: {
         Row: {
           announcement_id: string
