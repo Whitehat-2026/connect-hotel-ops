@@ -101,13 +101,29 @@ export const crearIncidencia = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Actualiza estado/prioridad/asignación de una incidencia.
+ * Gestión reservada a Supervisor, Administración y Gerencia: un Colaborador
+ * puede registrar y consultar, pero no modificar estados sensibles.
+ */
 export const actualizarIncidencia = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => incidenciaActualizarSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const roles = (
+      (await context.supabase.from("user_roles").select("role").eq("user_id", context.userId))
+        .data ?? []
+    ).map((r) => r.role);
+    const puedeGestionar = roles.some((r) => ["supervisor", "admin", "gerente"].includes(r));
+    if (!puedeGestionar)
+      throw new Error(
+        "Su rol puede registrar y consultar incidencias, pero no modificar su estado.",
+      );
+
     const { id, ...cambios } = data;
     const patch: Record<string, unknown> = { ...cambios };
     if (cambios.estado === "en_proceso") patch["primera_respuesta_at"] = new Date().toISOString();
+
     if (cambios.estado === "resuelta" || cambios.estado === "cerrada")
       patch["resuelta_at"] = new Date().toISOString();
     if (cambios.estado && cambios.estado !== "abierta") patch["asignado_a"] = context.userId;
@@ -124,6 +140,12 @@ export const actualizarIncidencia = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Entregas de turno.
+ * Confidencialidad: el bloque de VIPs/atenciones especiales sólo se envía a
+ * perfiles autorizados a VIP (Gerencia). Para el resto se omite en el servidor,
+ * no sólo en la interfaz.
+ */
 export const listarTurnos = createServerFn({ method: "GET" })
   .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
@@ -133,8 +155,16 @@ export const listarTurnos = createServerFn({ method: "GET" })
       .order("fecha", { ascending: false })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const { data: puedeVerVip } = await context.supabase.rpc("puede_ver_vip", {
+      _user_id: context.userId,
+    });
+    return (data ?? []).map((t) => ({
+      ...t,
+      vips: puedeVerVip ? t.vips : null,
+      vip_restringido: !puedeVerVip,
+    }));
   });
+
 
 export const crearTurno = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
@@ -320,9 +350,19 @@ export const cambiarEstadoPedido = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!pedido.data) throw new Error("Pedido no encontrado");
 
+    // Un Colaborador crea y consulta pedidos, pero no cambia estados ni aprueba.
+    const roles = (
+      (await supabase.from("user_roles").select("role").eq("user_id", userId)).data ?? []
+    ).map((r) => r.role);
+    if (!roles.some((r) => ["supervisor", "admin", "gerente"].includes(r)))
+      throw new Error(
+        "Su rol puede crear y consultar pedidos, pero no modificar su estado ni aprobarlos.",
+      );
+
     const requiereAprobacion =
       pedido.data.prioridad === "alta" || pedido.data.prioridad === "critica";
     const { data: esGerencia } = await supabase.rpc("es_gerencia", { _user_id: userId });
+
 
     if (data.estado === "aprobado" || data.estado === "rechazado") {
       if (!esGerencia) throw new Error("Solo gerencia puede aprobar o rechazar pedidos");

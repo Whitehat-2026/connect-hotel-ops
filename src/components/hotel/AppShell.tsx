@@ -25,24 +25,27 @@ import { RoleBadge } from "./Badges";
 import { Logo } from "./Logo";
 
 const nav = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Panel general", icon: LayoutDashboard },
   { to: "/incidencias", label: "Incidencias", icon: AlertTriangle, modulo: "incidencias" },
   { to: "/turnos", label: "Turnos", icon: ClipboardList, modulo: "turnos" },
   { to: "/comunicados", label: "Comunicados", icon: Megaphone, modulo: "comunicados" },
   { to: "/vip", label: "VIP", icon: Crown, soloVip: true },
   { to: "/checklists", label: "Checklists", icon: CheckSquare },
   { to: "/pedidos", label: "Pedidos", icon: PackageSearch, modulo: "pedidos" },
-  { to: "/estrategia", label: "Estrategia", icon: LineChart },
+  { to: "/estrategia", label: "Estrategia", icon: LineChart, soloEstrategia: true },
   { to: "/auditoria", label: "Auditoría", icon: ScrollText, soloAuditoria: true },
   { to: "/admin", label: "Administración", icon: Shield, soloAdmin: true, modulo: "administracion" },
 ] as const;
+
 
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { sesion, roles, puedeVerVip, tieneRol } = useSesion();
   const puedeVerAuditoria = tieneRol("gerente", "admin", "supervisor");
   const puedeVerAdmin = tieneRol("gerente", "admin");
+  const puedeVerEstrategia = tieneRol("gerente", "admin");
   const { contadores } = useNotificaciones();
+
   const queryClient = useQueryClient();
   const registrarCierre = useServerFn(registrarCierreSesion);
 
@@ -98,10 +101,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 pb-2">
+        <nav className="mx-auto flex max-w-7xl flex-wrap gap-1 px-2 pb-2">
           {nav
             .filter((item) => !("soloVip" in item) || puedeVerVip)
             .filter((item) => !("soloAuditoria" in item) || puedeVerAuditoria)
+            .filter((item) => !("soloEstrategia" in item) || puedeVerEstrategia)
             .filter((item) => !("soloAdmin" in item) || puedeVerAdmin)
             .map((item) => (
             <Link
@@ -109,9 +113,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               to={item.to}
               activeProps={{ className: "text-primary border-primary/50 bg-secondary" }}
               inactiveProps={{ className: "text-muted-foreground border-transparent" }}
-              className="flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium uppercase tracking-[0.08em] hover:text-primary"
+              className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md border px-2.5 py-2 text-[11px] font-medium uppercase tracking-[0.06em] hover:text-primary sm:px-3 sm:text-xs"
             >
-              <item.icon className="h-3.5 w-3.5" />
+              <item.icon className="h-3.5 w-3.5 shrink-0" />
+
               {item.label}
               {"modulo" in item && contadores[item.modulo as Modulo] > 0 ? (
                 <span

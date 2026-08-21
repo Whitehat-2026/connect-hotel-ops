@@ -49,15 +49,25 @@ function Estrategia() {
   const pedidos = ped.data ?? [];
   const comunicados = com.data ?? [];
 
-  const porDia = Object.entries(
-    incidencias.reduce<Record<string, number>>((acc, i) => {
-      const d = new Date(i.created_at).toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
-      acc[d] = (acc[d] ?? 0) + 1;
-      return acc;
-    }, {}),
-  )
-    .map(([dia, total]) => ({ dia, total }))
-    .reverse();
+  /**
+   * Serie diaria de los últimos 14 días en orden cronológico ascendente.
+   * Etiqueta fija DD/MM para evitar formatos locales o traducciones del navegador.
+   */
+  const porDia = (() => {
+    const dias: { dia: string; total: number }[] = [];
+    const hoy = new Date();
+    for (let i = 13; i >= 0; i -= 1) {
+      const d = new Date(hoy);
+      d.setDate(hoy.getDate() - i);
+      const clave = d.toISOString().slice(0, 10);
+      const etiqueta = `${clave.slice(8, 10)}/${clave.slice(5, 7)}`;
+      dias.push({
+        dia: etiqueta,
+        total: incidencias.filter((x) => (x.created_at ?? "").slice(0, 10) === clave).length,
+      });
+    }
+    return dias;
+  })();
 
   const porPrioridad = ["baja", "media", "alta", "critica"].map((p) => ({
     name: p,

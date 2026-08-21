@@ -51,5 +51,9 @@ export const accesoSensibleSchema = z.object({
 
 export const auditoriaFiltroSchema = z.object({
   categoria: z.enum(["todas", "acceso", "administracion", "seguridad", "operacion", "vip"]).default("todas"),
-  limite: z.number().int().min(1).max(300).default(100),
+  limite: z.number().int().min(1).max(300).default(50),
+  desplazamiento: z.number().int().min(0).max(100000).default(0),
+  usuario: z.string().trim().max(120).optional(),
+  desde: z.string().trim().max(10).optional(),
+  hasta: z.string().trim().max(10).optional(),
 });

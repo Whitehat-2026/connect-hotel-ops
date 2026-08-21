@@ -12,7 +12,11 @@ import {
 } from "./gobernanza.schemas";
 import { registrarAuditoria } from "./gobernanza.server";
 
-/** Bitácora general: la RLS decide qué eventos puede ver cada rol. */
+/**
+ * Bitácora general: la RLS decide qué eventos puede ver cada rol.
+ * Devuelve una página de resultados (carga incremental) conservando todo el
+ * historial: nada se elimina ni se reescribe.
+ */
 export const listarAuditoria = createServerFn({ method: "GET" })
   .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => auditoriaFiltroSchema.parse(input ?? {}))
@@ -21,26 +25,46 @@ export const listarAuditoria = createServerFn({ method: "GET" })
       .from("audit_log")
       .select("*, areas:areas!audit_log_actor_area_fkey(nombre, codigo)")
       .order("created_at", { ascending: false })
-      .limit(data.limite);
+      .range(data.desplazamiento, data.desplazamiento + data.limite - 1);
     if (data.categoria !== "todas") q = q.eq("categoria", data.categoria);
+    if (data.usuario) q = q.ilike("actor_nombre", `%${data.usuario}%`);
+    if (data.desde) q = q.gte("created_at", `${data.desde}T00:00:00.000Z`);
+    if (data.hasta) q = q.lte("created_at", `${data.hasta}T23:59:59.999Z`);
     const { data: filas, error } = await q;
     if (error) throw new Error(error.message);
     return filas ?? [];
   });
 
-/** Deja constancia del acceso a un módulo sensible. */
+/**
+ * Deja constancia del acceso a un módulo sensible.
+ * Evita duplicados consecutivos generados por una única visita/render:
+ * si el mismo usuario ya registró ese acceso en los últimos minutos, no se
+ * inserta un evento nuevo (el historial anterior no se modifica).
+ */
 export const registrarAccesoSensible = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => accesoSensibleSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const desde = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const previo = await context.supabase
+      .from("audit_log")
+      .select("id")
+      .eq("actor_id", context.userId)
+      .eq("accion", "acceso_modulo")
+      .eq("recurso", data.modulo)
+      .gte("created_at", desde)
+      .limit(1);
+    if ((previo.data ?? []).length) return { ok: true, duplicado: true };
+
     await registrarAuditoria(context.supabase, context.userId, {
       categoria: data.modulo === "vip" ? "vip" : "seguridad",
       accion: "acceso_modulo",
       recurso: data.modulo,
       detalle: `Consulta del módulo ${data.modulo}`,
     });
-    return { ok: true };
+    return { ok: true, duplicado: false };
   });
+
 
 /** Cierre de sesión: se registra antes de invalidar la sesión. */
 export const registrarCierreSesion = createServerFn({ method: "POST" })

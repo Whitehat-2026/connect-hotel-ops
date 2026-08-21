@@ -22,6 +22,7 @@ import {
 import { areaCrearSchema } from "@/lib/hotel.schemas";
 import { usuarioAltaSchema } from "@/lib/gobernanza.schemas";
 import { fechaHora } from "@/lib/fecha";
+import { nivelArea } from "@/lib/etiquetas";
 import { useSesion } from "@/hooks/use-sesion";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -62,6 +63,7 @@ function Admin() {
   const registrarAcceso = useServerFn(registrarAccesoSensible);
 
   const [form, setForm] = useState({ nombre: "", codigo: "", descripcion: "" });
+  const [verHistorialAltas, setVerHistorialAltas] = useState(false);
   const [nuevo, setNuevo] = useState({
     email: "",
     nombre: "",
@@ -311,6 +313,16 @@ function Admin() {
 
   const pendientes = solicitudes.filter((s) => s.estado === "pendiente");
 
+  /** Altas: primero las pendientes, después el histórico resuelto más reciente. */
+  const altasPendientes = altas.filter((s) => s.estado === "pendiente");
+  const altasResueltas = [...altas]
+    .filter((s) => s.estado !== "pendiente")
+    .sort((a, b) => (a.resuelto_at ?? a.created_at) < (b.resuelto_at ?? b.created_at) ? 1 : -1);
+  const altasVisibles = [
+    ...altasPendientes,
+    ...(verHistorialAltas ? altasResueltas : altasResueltas.slice(0, 5)),
+  ];
+
   return (
     <div>
       <PageHeader
@@ -352,10 +364,10 @@ function Admin() {
         <h2 className="font-display text-2xl">Solicitudes de alta</h2>
         <div className="gold-rule mt-2 w-16" />
         <div className="surface mt-4 divide-y divide-border/60 p-5">
-          {altas.length === 0 ? (
+          {altasVisibles.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sin solicitudes de alta registradas.</p>
           ) : (
-            altas.map((s) => (
+            altasVisibles.map((s) => (
               <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div>
                   <p className="text-sm">
@@ -397,6 +409,15 @@ function Admin() {
               </div>
             ))
           )}
+          {!verHistorialAltas && altasResueltas.length > 5 ? (
+            <button
+              type="button"
+              className="pt-3 text-xs uppercase tracking-[0.12em] text-primary"
+              onClick={() => setVerHistorialAltas(true)}
+            >
+              Ver historial completo ({altasResueltas.length})
+            </button>
+          ) : null}
         </div>
       </section>
 
@@ -474,7 +495,7 @@ function Admin() {
                 </select>
               ) : (
                 <span className="text-[11px] uppercase tracking-[0.15em] text-primary/80">
-                  {a.nivel ?? "operativo"}
+                  {nivelArea(a.nivel)}
                 </span>
               )}
             </span>

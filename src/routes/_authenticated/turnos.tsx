@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/turnos")({
 });
 
 function Turnos() {
-  const { sesion } = useSesion();
+  const { sesion, puedeVerVip } = useSesion();
   const qc = useQueryClient();
   const listar = useServerFn(listarTurnos);
   const crear = useServerFn(crearTurno);
@@ -118,7 +118,7 @@ function Turnos() {
             </p>
           ) : null}
         </div>
-        <textarea className="field" rows={3} placeholder="VIPs y atenciones especiales" value={form.vips} onChange={(e) => setForm({ ...form, vips: e.target.value })} maxLength={2000} />
+        <textarea className="field" rows={3} placeholder={puedeVerVip ? "VIPs y atenciones especiales" : "Atenciones especiales del turno (sin datos identificativos de huéspedes)"} value={form.vips} onChange={(e) => setForm({ ...form, vips: e.target.value })} maxLength={2000} />
         <textarea className="field" rows={3} placeholder="Incidencias abiertas" value={form.incidencias_abiertas} onChange={(e) => setForm({ ...form, incidencias_abiertas: e.target.value })} maxLength={2000} />
         <textarea className="field" rows={3} placeholder="Notas adicionales" value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} maxLength={2000} />
         <input className="field" placeholder="Firma de quien entrega (nombre completo)" value={form.firma_entrega} onChange={(e) => setForm({ ...form, firma_entrega: e.target.value })} maxLength={120} />
@@ -146,7 +146,7 @@ function Turnos() {
               <dl className="mt-4 space-y-3 text-sm">
                 {[
                   ["Pendientes", t.pendientes],
-                  ["VIPs", t.vips],
+                  ["Atenciones especiales", puedeVerVip ? t.vips : null],
                   ["Incidencias abiertas", t.incidencias_abiertas],
                   ["Notas", t.notas],
                 ].map(([k, v]) =>
@@ -157,6 +157,16 @@ function Turnos() {
                     </div>
                   ) : null,
                 )}
+                {t.vip_restringido ? (
+                  <div>
+                    <dt className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                      Atenciones especiales
+                    </dt>
+                    <dd className="text-muted-foreground">
+                      🔒 Información reservada a Gerencia
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
               <div className="mt-4 border-t border-border pt-4 text-sm">
                 <p className="text-xs text-muted-foreground">Entrega: {t.firma_entrega ?? "—"}</p>

@@ -28,14 +28,15 @@ import {
 } from "@/lib/hotel.functions";
 import { resumenGobernanza } from "@/lib/gobernanza.functions";
 import { fechaHora } from "@/lib/fecha";
+import { accionAuditoria, nivelArea, nombreActor } from "@/lib/etiquetas";
 import { useSesion } from "@/hooks/use-sesion";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard operativo · Swissôtel Quito" },
+      { title: "Panel general · Swissôtel Quito" },
       { name: "description", content: "KPIs de incidencias, checklists, VIPs y comunicados del hotel en tiempo real." },
-      { property: "og:title", content: "Dashboard operativo · Swissôtel Quito" },
+      { property: "og:title", content: "Panel general · Swissôtel Quito" },
       { property: "og:description", content: "Indicadores clave de la operación diaria del hotel." },
     ],
   }),
@@ -43,7 +44,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
-  const { esGerencia, puedeVerVip } = useSesion();
+  const { sesion, esGerencia, puedeVerVip, tieneRol } = useSesion();
+  const esColaborador = !tieneRol("supervisor", "admin", "gerente");
+  const miArea = sesion?.perfil?.area_id ?? null;
+  const miId = sesion?.perfil?.id ?? null;
   const fnIncidencias = useServerFn(listarIncidencias);
   const fnComunicados = useServerFn(listarComunicados);
   const fnChecklists = useServerFn(listarChecklists);
@@ -77,6 +81,16 @@ function Dashboard() {
           ) / conRespuesta.length,
         );
 
+  const misIncidencias = inc.filter((i) => i.created_by === miId);
+  const incidenciasMiArea = abiertas.filter(
+    (i) => i.area_id === miArea || i.area_origen === miArea,
+  );
+  const checklistsMiArea = (checklists.data ?? []).filter(
+    (c) => !miArea || c.area_id === miArea,
+  );
+  const itemsMiArea = checklistsMiArea.flatMap((c) => c.checklist_items ?? []);
+  const completadosMiArea = itemsMiArea.filter((i) => i.completado).length;
+
   const items = (checklists.data ?? []).flatMap((c) => c.checklist_items ?? []);
   const completados = items.filter((i) => i.completado).length;
   const sinLeer = (comunicados.data ?? []).filter((c) => !c.leido).length;
@@ -92,19 +106,34 @@ function Dashboard() {
   return (
     <div>
       <PageHeader
-        titulo="Panorama operativo"
-        descripcion="Estado consolidado del hotel para el turno en curso."
+        titulo="Panel general"
+        descripcion={
+          esColaborador
+            ? "Sus pendientes y los de su área para el turno en curso."
+            : "Estado consolidado del hotel para el turno en curso."
+        }
       />
 
+      {esColaborador ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Incidencias abiertas de mi área" value={incidenciasMiArea.length} icon={<AlertTriangle className="h-4 w-4" />} tone="warning" hint="Incluye escaladas y en proceso" />
+          <StatCard label="Incidencias que reporté" value={misIncidencias.length} icon={<AlertTriangle className="h-4 w-4" />} hint="Registros creados por usted" />
+          <StatCard label="Checklists de mi área" value={`${completadosMiArea}/${itemsMiArea.length}`} icon={<CheckSquare className="h-4 w-4" />} tone="success" hint="Tareas SOP del día" />
+          <StatCard label="Comunicados sin leer" value={sinLeer} icon={<Megaphone className="h-4 w-4" />} tone="danger" hint="Pendientes de confirmación" />
+        </div>
+      ) : (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Incidencias abiertas" value={abiertas.length} icon={<AlertTriangle className="h-4 w-4" />} tone="warning" hint="Incluye escaladas y en proceso" />
-        <StatCard label="Tiempo medio respuesta" value={`${tiempoMedio} min`} icon={<Timer className="h-4 w-4" />} hint="Desde alta hasta primera acción" />
-        <StatCard label="Checklists completados" value={`${completados}/${items.length}`} icon={<CheckSquare className="h-4 w-4" />} tone="success" hint="Tareas SOP del día" />
-        <StatCard label="VIPs del día" value={puedeVerVip ? (vips.data ?? []).length : "Restringido"} icon={<Crown className="h-4 w-4" />} hint={puedeVerVip ? "Visible solo para gerencia" : "🔒 Información restringida"} />
-        <StatCard label="Comunicados sin leer" value={sinLeer} icon={<Megaphone className="h-4 w-4" />} tone="danger" hint="Pendientes de confirmación" />
-      </div>
+          <StatCard label="Incidencias abiertas" value={abiertas.length} icon={<AlertTriangle className="h-4 w-4" />} tone="warning" hint="Incluye escaladas y en proceso" />
+          <StatCard label="Tiempo medio respuesta" value={`${tiempoMedio} min`} icon={<Timer className="h-4 w-4" />} hint="Desde alta hasta primera acción" />
+          <StatCard label="Checklists completados" value={`${completados}/${items.length}`} icon={<CheckSquare className="h-4 w-4" />} tone="success" hint="Tareas SOP del día" />
+          <StatCard label="VIPs del día" value={puedeVerVip ? (vips.data ?? []).length : "Restringido"} icon={<Crown className="h-4 w-4" />} hint={puedeVerVip ? "Visible solo para gerencia" : "🔒 Información restringida"} />
+          <StatCard label="Comunicados sin leer" value={sinLeer} icon={<Megaphone className="h-4 w-4" />} tone="danger" hint="Pendientes de confirmación" />
+        </div>
+  
+        )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-5">
+        {esColaborador ? null : (
         <section className="surface p-5 lg:col-span-3">
           <h2 className="font-display text-xl">Incidencias por área</h2>
           <div className="mt-4 h-64">
@@ -125,11 +154,14 @@ function Dashboard() {
             </ResponsiveContainer>
           </div>
         </section>
+        )}
 
         <section className="surface p-5 lg:col-span-2">
-          <h2 className="font-display text-xl">Pendientes prioritarios</h2>
+          <h2 className="font-display text-xl">
+            {esColaborador ? "Pendientes de mi área" : "Pendientes prioritarios"}
+          </h2>
           <ul className="mt-4 space-y-3">
-            {abiertas.slice(0, 6).map((i) => (
+            {(esColaborador ? incidenciasMiArea : abiertas).slice(0, 6).map((i) => (
               <li key={i.id} className="border-b border-border/60 pb-3 last:border-0">
                 <p className="text-sm">{i.titulo}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -139,7 +171,7 @@ function Dashboard() {
                 </div>
               </li>
             ))}
-            {abiertas.length === 0 ? (
+            {(esColaborador ? incidenciasMiArea : abiertas).length === 0 ? (
               <li className="text-sm text-muted-foreground">Sin pendientes abiertos. Operación en verde.</li>
             ) : null}
           </ul>
@@ -180,7 +212,7 @@ function Dashboard() {
             {gobernanza.data.areas.map((a) => (
               <span key={a.id} className="rounded-full border border-border px-3 py-1 text-[11px]">
                 {a.codigo} · {a.nombre}
-                <span className="ml-2 uppercase tracking-[0.15em] text-primary/80">{a.nivel}</span>
+                <span className="ml-2 uppercase tracking-[0.15em] text-primary/80">{nivelArea(a.nivel)}</span>
               </span>
             ))}
           </div>
@@ -188,10 +220,10 @@ function Dashboard() {
           <ul className="mt-4 space-y-2">
             {gobernanza.data.eventosRecientes.map((e) => (
               <li key={e.id} className="border-b border-border/60 pb-2 text-sm last:border-0">
-                <span className="text-foreground">{e.accion.replace(/_/g, " ")}</span>
+                <span className="text-foreground">{accionAuditoria(e.accion)}</span>
                 <span className="text-xs text-muted-foreground">
                   {" "}
-                  · {e.actor_nombre ?? "—"} · {fechaHora(e.created_at)}
+                  · {nombreActor(e.actor_nombre)} · {fechaHora(e.created_at)}
                 </span>
               </li>
             ))}
