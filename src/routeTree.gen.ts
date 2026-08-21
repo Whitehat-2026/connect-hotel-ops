@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 import { Route as AuthenticatedChecklistsRouteImport } from './routes/_authenticated/checklists'
 import { Route as AuthenticatedComunicadosRouteImport } from './routes/_authenticated/comunicados'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -45,6 +46,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedChecklistsRoute = AuthenticatedChecklistsRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/checklists': typeof AuthenticatedChecklistsRoute
   '/comunicados': typeof AuthenticatedComunicadosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/checklists': typeof AuthenticatedChecklistsRoute
   '/comunicados': typeof AuthenticatedComunicadosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/checklists': typeof AuthenticatedChecklistsRoute
   '/_authenticated/comunicados': typeof AuthenticatedComunicadosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/admin'
+    | '/auditoria'
     | '/checklists'
     | '/comunicados'
     | '/dashboard'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/admin'
+    | '/auditoria'
     | '/checklists'
     | '/comunicados'
     | '/dashboard'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/admin'
+    | '/_authenticated/auditoria'
     | '/_authenticated/checklists'
     | '/_authenticated/comunicados'
     | '/_authenticated/dashboard'
@@ -222,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/auditoria': {
+      id: '/_authenticated/auditoria'
+      path: '/auditoria'
+      fullPath: '/auditoria'
+      preLoaderRoute: typeof AuthenticatedAuditoriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/checklists': {
@@ -285,6 +304,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedChecklistsRoute: typeof AuthenticatedChecklistsRoute
   AuthenticatedComunicadosRoute: typeof AuthenticatedComunicadosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -297,6 +317,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
   AuthenticatedChecklistsRoute: AuthenticatedChecklistsRoute,
   AuthenticatedComunicadosRoute: AuthenticatedComunicadosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,

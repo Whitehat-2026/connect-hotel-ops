@@ -13,10 +13,10 @@ import {
   rolAsignarSchema,
   turnoCrearSchema,
   turnoFirmarSchema,
-  usuarioActivoSchema,
   vipCrearSchema,
 } from "./hotel.schemas";
 import { conReintento, limpiar } from "./hotel.server";
+import { registrarAuditoria } from "./gobernanza.server";
 
 /** Sesión: perfil, roles y catálogo de áreas. */
 
@@ -364,33 +364,51 @@ export const listarUsuarios = createServerFn({ method: "GET" })
     }));
   });
 
+/**
+ * Asignación de rol NO crítico (supervisor/colaborador).
+ * Los roles críticos (admin/gerente) sólo se aplican mediante el flujo de
+ * solicitud + aprobación de Gerencia (`solicitarPrivilegio`/`resolverPrivilegio`).
+ * La RLS de `user_roles` impide además la autoelevación.
+ */
 export const asignarRol = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => rolAsignarSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const borrado = await context.supabase
-      .from("user_roles")
-      .delete()
-      .eq("user_id", data.user_id);
+    const { supabase, userId } = context;
+    if (data.role === "admin" || data.role === "gerente") {
+      await registrarAuditoria(supabase, userId, {
+        categoria: "seguridad",
+        accion: "cambio_rol",
+        recurso: "user_roles",
+        recurso_id: data.user_id,
+        resultado: "rechazado",
+        detalle: `Rol crítico ${data.role} requiere aprobación de Gerencia`,
+      });
+      throw new Error(
+        "Los roles críticos requieren solicitud y aprobación de Gerencia General.",
+      );
+    }
+    if (data.user_id === userId) {
+      throw new Error("No puede modificar su propio rol.");
+    }
+
+    const borrado = await supabase.from("user_roles").delete().eq("user_id", data.user_id);
     if (borrado.error) throw new Error(borrado.error.message);
-    const { error } = await context.supabase
+    const { error } = await supabase
       .from("user_roles")
       .insert({ user_id: data.user_id, role: data.role });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error("No tiene autorización para asignar este rol.");
+
+    await registrarAuditoria(supabase, userId, {
+      categoria: "administracion",
+      accion: "cambio_rol",
+      recurso: "user_roles",
+      recurso_id: data.user_id,
+      detalle: `Nuevo rol: ${data.role}`,
+    });
     return { ok: true };
   });
 
-export const cambiarActivo = createServerFn({ method: "POST" })
-  .middleware([requireUsuarioActivo])
-  .inputValidator((input: unknown) => usuarioActivoSchema.parse(input))
-  .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("profiles")
-      .update({ activo: data.activo })
-      .eq("id", data.user_id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
 
 export const crearArea = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])

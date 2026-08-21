@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { registrarAccesoSensible } from "@/lib/gobernanza.functions";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
 import { PageHeader } from "@/components/hotel/PageHeader";
@@ -31,6 +32,11 @@ function Vip() {
   const qc = useQueryClient();
   const listar = useServerFn(listarVips);
   const crear = useServerFn(crearVip);
+  const registrarAcceso = useServerFn(registrarAccesoSensible);
+
+  useEffect(() => {
+    registrarAcceso({ data: { modulo: "vip" } }).catch(() => undefined);
+  }, [registrarAcceso]);
   const [form, setForm] = useState({
     huesped: "",
     habitacion: "",

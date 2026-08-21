@@ -12,11 +12,14 @@ import {
   PackageSearch,
   LineChart,
   Shield,
+  ScrollText,
   LogOut,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { iniciarCierreSesion } from "@/lib/sesion-estado";
 import { useSesion } from "@/hooks/use-sesion";
+import { useServerFn } from "@tanstack/react-start";
+import { registrarCierreSesion } from "@/lib/gobernanza.functions";
 import { useNotificaciones, type Modulo } from "@/hooks/use-notificaciones";
 import { RoleBadge } from "./Badges";
 import { Logo } from "./Logo";
@@ -30,17 +33,26 @@ const nav = [
   { to: "/checklists", label: "Checklists", icon: CheckSquare },
   { to: "/pedidos", label: "Pedidos", icon: PackageSearch, modulo: "pedidos" },
   { to: "/estrategia", label: "Estrategia", icon: LineChart },
+  { to: "/auditoria", label: "Auditoría", icon: ScrollText, soloAuditoria: true },
   { to: "/admin", label: "Administración", icon: Shield },
 ] as const;
 
+
 export function AppShell({ children }: { children: ReactNode }) {
-  const { sesion, roles, puedeVerVip } = useSesion();
+  const { sesion, roles, puedeVerVip, tieneRol } = useSesion();
+  const puedeVerAuditoria = tieneRol("gerente", "admin", "supervisor");
   const { contadores } = useNotificaciones();
   const queryClient = useQueryClient();
+  const registrarCierre = useServerFn(registrarCierreSesion);
 
   async function cerrarSesion() {
     // 1) bloquear nuevas llamadas protegidas, 2) cancelar/limpiar caché,
     // 3) invalidar la sesión, 4) salir con recarga limpia (sin bfcache).
+    try {
+      await registrarCierre();
+    } catch {
+      /* la bitácora nunca impide cerrar sesión */
+    }
     iniciarCierreSesion();
     await queryClient.cancelQueries();
     queryClient.removeQueries();
@@ -86,7 +98,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 pb-2">
-          {nav.filter((item) => !("soloVip" in item) || puedeVerVip).map((item) => (
+          {nav
+            .filter((item) => !("soloVip" in item) || puedeVerVip)
+            .filter((item) => !("soloAuditoria" in item) || puedeVerAuditoria).map((item) => (
             <Link
               key={item.to}
               to={item.to}

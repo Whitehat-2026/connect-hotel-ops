@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { registrarAuditoriaAdmin } from "./gobernanza.server";
 
 const accesoSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
@@ -30,6 +31,13 @@ export const accesoDemo = createServerFn({ method: "POST" })
 
     // Rechazo controlado (no excepción): evita ruido de error en tiempo de ejecución.
     if (!autorizado.data) {
+      await registrarAuditoriaAdmin(supabaseAdmin, {
+        categoria: "acceso",
+        accion: "acceso_rechazado",
+        recurso: "sesion",
+        resultado: "rechazado",
+        detalle: `Correo no autorizado: ${data.email}`,
+      });
       return {
         ok: false as const,
         mensaje: "Usuario no autorizado. Verifique el correo o contacte con Administración.",
@@ -43,6 +51,13 @@ export const accesoDemo = createServerFn({ method: "POST" })
       .eq("email", data.email)
       .maybeSingle();
     if (perfilExistente.data && perfilExistente.data.activo === false) {
+      await registrarAuditoriaAdmin(supabaseAdmin, {
+        categoria: "acceso",
+        accion: "acceso_rechazado",
+        recurso: "sesion",
+        resultado: "rechazado",
+        detalle: `Cuenta desactivada: ${data.email}`,
+      });
       return { ok: false as const, mensaje: "Usuario desactivado. Contacte con Administración." };
     }
 
@@ -104,6 +119,16 @@ export const accesoDemo = createServerFn({ method: "POST" })
         if (ins.error) throw new Error(`Rol: ${ins.error.message}`);
       }
     }
+
+    await registrarAuditoriaAdmin(supabaseAdmin, {
+      actor_id: usuarioId ?? null,
+      actor_nombre: autorizado.data.nombre ?? data.email,
+      actor_rol: autorizado.data.role,
+      categoria: "acceso",
+      accion: "inicio_sesion",
+      recurso: "sesion",
+      resultado: "ok",
+    });
 
     return { ok: true as const, tokenHash };
   });
