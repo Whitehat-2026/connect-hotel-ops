@@ -50,7 +50,9 @@ function Admin() {
   const rol = useServerFn(asignarRol);
   const estadoUsuario = useServerFn(cambiarEstadoUsuario);
   const area = useServerFn(crearArea);
-  const alta = useServerFn(altaUsuario);
+  const alta = useServerFn(solicitarAlta);
+  const altasFn = useServerFn(listarAltas);
+  const resolverAltaFn = useServerFn(resolverAlta);
   const solicitar = useServerFn(solicitarPrivilegio);
   const resolver = useServerFn(resolverPrivilegio);
   const solicitudesFn = useServerFn(listarSolicitudes);
