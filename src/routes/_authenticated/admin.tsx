@@ -10,11 +10,13 @@ import { ProtectedRoute } from "@/components/hotel/ProtectedRoute";
 import { asignarRol, crearArea, listarUsuarios } from "@/lib/hotel.functions";
 import {
   actualizarNivelArea,
-  altaUsuario,
   cambiarEstadoUsuario,
+  listarAltas,
   listarSolicitudes,
   registrarAccesoSensible,
+  resolverAlta,
   resolverPrivilegio,
+  solicitarAlta,
   solicitarPrivilegio,
 } from "@/lib/gobernanza.functions";
 import { areaCrearSchema } from "@/lib/hotel.schemas";
