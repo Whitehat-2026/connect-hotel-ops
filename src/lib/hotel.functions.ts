@@ -101,13 +101,29 @@ export const crearIncidencia = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Actualiza estado/prioridad/asignación de una incidencia.
+ * Gestión reservada a Supervisor, Administración y Gerencia: un Colaborador
+ * puede registrar y consultar, pero no modificar estados sensibles.
+ */
 export const actualizarIncidencia = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => incidenciaActualizarSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const roles = (
+      (await context.supabase.from("user_roles").select("role").eq("user_id", context.userId))
+        .data ?? []
+    ).map((r) => r.role);
+    const puedeGestionar = roles.some((r) => ["supervisor", "admin", "gerente"].includes(r));
+    if (!puedeGestionar)
+      throw new Error(
+        "Su rol puede registrar y consultar incidencias, pero no modificar su estado.",
+      );
+
     const { id, ...cambios } = data;
     const patch: Record<string, unknown> = { ...cambios };
     if (cambios.estado === "en_proceso") patch["primera_respuesta_at"] = new Date().toISOString();
+
     if (cambios.estado === "resuelta" || cambios.estado === "cerrada")
       patch["resuelta_at"] = new Date().toISOString();
     if (cambios.estado && cambios.estado !== "abierta") patch["asignado_a"] = context.userId;
