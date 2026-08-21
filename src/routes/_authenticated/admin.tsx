@@ -312,6 +312,16 @@ function Admin() {
 
   const pendientes = solicitudes.filter((s) => s.estado === "pendiente");
 
+  /** Altas: primero las pendientes, después el histórico resuelto más reciente. */
+  const altasPendientes = altas.filter((s) => s.estado === "pendiente");
+  const altasResueltas = [...altas]
+    .filter((s) => s.estado !== "pendiente")
+    .sort((a, b) => (a.resuelto_at ?? a.created_at) < (b.resuelto_at ?? b.created_at) ? 1 : -1);
+  const altasVisibles = [
+    ...altasPendientes,
+    ...(verHistorialAltas ? altasResueltas : altasResueltas.slice(0, 5)),
+  ];
+
   return (
     <div>
       <PageHeader
@@ -353,10 +363,10 @@ function Admin() {
         <h2 className="font-display text-2xl">Solicitudes de alta</h2>
         <div className="gold-rule mt-2 w-16" />
         <div className="surface mt-4 divide-y divide-border/60 p-5">
-          {altas.length === 0 ? (
+          {altasVisibles.length === 0 ? (
             <p className="text-sm text-muted-foreground">Sin solicitudes de alta registradas.</p>
           ) : (
-            altas.map((s) => (
+            altasVisibles.map((s) => (
               <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div>
                   <p className="text-sm">
