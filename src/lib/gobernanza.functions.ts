@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireUsuarioActivo } from "./auth-activo.middleware";
 import {
   accesoSensibleSchema,
+  altaResolverSchema,
   auditoriaFiltroSchema,
   bajaUsuarioSchema,
   nivelAreaSchema,
