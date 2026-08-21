@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { registrarAccesoSensible } from "@/lib/gobernanza.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
@@ -10,8 +12,6 @@ import { PriorityBadge } from "@/components/hotel/Badges";
 import { ProtectedRoute } from "@/components/hotel/ProtectedRoute";
 import { crearVip, listarVips } from "@/lib/hotel.functions";
 import { vipCrearSchema } from "@/lib/hotel.schemas";
-
-const MODULO_VIP = "vip" as const;
 
 export const Route = createFileRoute("/_authenticated/vip")({
   head: () => ({
@@ -33,6 +33,11 @@ function Vip() {
   const qc = useQueryClient();
   const listar = useServerFn(listarVips);
   const crear = useServerFn(crearVip);
+  const registrarAcceso = useServerFn(registrarAccesoSensible);
+
+  useEffect(() => {
+    registrarAcceso({ data: { modulo: "vip" } }).catch(() => undefined);
+  }, [registrarAcceso]);
   const [form, setForm] = useState({
     huesped: "",
     habitacion: "",
