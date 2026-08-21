@@ -10,11 +10,13 @@ import { ProtectedRoute } from "@/components/hotel/ProtectedRoute";
 import { asignarRol, crearArea, listarUsuarios } from "@/lib/hotel.functions";
 import {
   actualizarNivelArea,
-  altaUsuario,
   cambiarEstadoUsuario,
+  listarAltas,
   listarSolicitudes,
   registrarAccesoSensible,
+  resolverAlta,
   resolverPrivilegio,
+  solicitarAlta,
   solicitarPrivilegio,
 } from "@/lib/gobernanza.functions";
 import { areaCrearSchema } from "@/lib/hotel.schemas";
@@ -48,7 +50,9 @@ function Admin() {
   const rol = useServerFn(asignarRol);
   const estadoUsuario = useServerFn(cambiarEstadoUsuario);
   const area = useServerFn(crearArea);
-  const alta = useServerFn(altaUsuario);
+  const alta = useServerFn(solicitarAlta);
+  const altasFn = useServerFn(listarAltas);
+  const resolverAltaFn = useServerFn(resolverAlta);
   const solicitar = useServerFn(solicitarPrivilegio);
   const resolver = useServerFn(resolverPrivilegio);
   const solicitudesFn = useServerFn(listarSolicitudes);
@@ -56,7 +60,13 @@ function Admin() {
   const registrarAcceso = useServerFn(registrarAccesoSensible);
 
   const [form, setForm] = useState({ nombre: "", codigo: "", descripcion: "" });
-  const [nuevo, setNuevo] = useState({ email: "", nombre: "", area_codigo: "", role: "colaborador" });
+  const [nuevo, setNuevo] = useState({
+    email: "",
+    nombre: "",
+    area_codigo: "",
+    role: "colaborador",
+    motivo: "",
+  });
 
   useEffect(() => {
     registrarAcceso({ data: { modulo: "admin" } }).catch(() => undefined);
@@ -67,10 +77,15 @@ function Admin() {
     queryKey: ["solicitudes-privilegio"],
     queryFn: () => solicitudesFn(),
   });
+  const { data: altas = [] } = useQuery({
+    queryKey: ["solicitudes-alta"],
+    queryFn: () => altasFn(),
+  });
 
   const refrescar = () => {
     qc.invalidateQueries({ queryKey: ["usuarios"] });
     qc.invalidateQueries({ queryKey: ["solicitudes-privilegio"] });
+    qc.invalidateQueries({ queryKey: ["solicitudes-alta"] });
     qc.invalidateQueries({ queryKey: ["auditoria"] });
   };
 
@@ -96,8 +111,17 @@ function Admin() {
   const mAlta = useMutation({
     mutationFn: (input: unknown) => alta({ data: input as never }),
     onSuccess: () => {
-      toast.success("Cuenta autorizada creada");
-      setNuevo({ email: "", nombre: "", area_codigo: "", role: "colaborador" });
+      toast.success("Solicitud de alta enviada a Gerencia General");
+      setNuevo({ email: "", nombre: "", area_codigo: "", role: "colaborador", motivo: "" });
+      refrescar();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const mResolverAlta = useMutation({
+    mutationFn: (input: { id: string; aprobar: boolean }) => resolverAltaFn({ data: input }),
+    onSuccess: () => {
+      toast.success("Solicitud de alta resuelta");
       refrescar();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -228,7 +252,10 @@ function Admin() {
 
   function enviarAlta(e: React.FormEvent) {
     e.preventDefault();
-    const parsed = usuarioAltaSchema.safeParse(nuevo);
+    const parsed = usuarioAltaSchema.safeParse({
+      ...nuevo,
+      motivo: nuevo.motivo || undefined,
+    });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Datos inválidos");
       return;
@@ -248,12 +275,12 @@ function Admin() {
       <DataTable columnas={columnas} filas={data} vacio="Sin usuarios registrados" />
 
       <section className="mt-8">
-        <h2 className="font-display text-2xl">Alta de cuenta autorizada</h2>
+        <h2 className="font-display text-2xl">Solicitud de alta de personal</h2>
         <div className="gold-rule mt-2 w-16" />
         <p className="mt-2 text-xs text-muted-foreground">
-          Sólo roles operativos. Elevar a administrador o gerente exige el flujo de aprobación.
+          La solicitud queda pendiente: la cuenta no puede iniciar sesión hasta que Gerencia General la apruebe.
         </p>
-        <form onSubmit={enviarAlta} className="surface mt-4 grid gap-3 p-5 md:grid-cols-5">
+        <form onSubmit={enviarAlta} className="surface mt-4 grid gap-3 p-5 md:grid-cols-6">
           <input className="field" placeholder="Correo corporativo" value={nuevo.email} onChange={(e) => setNuevo({ ...nuevo, email: e.target.value })} maxLength={255} required />
           <input className="field" placeholder="Nombre y apellido" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} maxLength={120} required />
           <select className="field" value={nuevo.area_codigo} onChange={(e) => setNuevo({ ...nuevo, area_codigo: e.target.value })} required>
@@ -266,10 +293,63 @@ function Admin() {
             <option value="colaborador">colaborador</option>
             <option value="supervisor">supervisor</option>
           </select>
+          <input className="field" placeholder="Motivo (opcional)" value={nuevo.motivo} onChange={(e) => setNuevo({ ...nuevo, motivo: e.target.value })} maxLength={500} />
           <button className="btn-gold hover:btn-gold-hover px-4 py-2 text-sm" disabled={mAlta.isPending}>
-            Registrar acceso
+            Solicitar alta
           </button>
         </form>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="font-display text-2xl">Solicitudes de alta</h2>
+        <div className="gold-rule mt-2 w-16" />
+        <div className="surface mt-4 divide-y divide-border/60 p-5">
+          {altas.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sin solicitudes de alta registradas.</p>
+          ) : (
+            altas.map((s) => (
+              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div>
+                  <p className="text-sm">
+                    {s.nombre} · {s.email} → <span className="text-primary">{s.rol_solicitado}</span> · {s.area_codigo}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {fechaHora(s.created_at)} · solicitado por {s.solicitante ?? "—"}
+                    {s.motivo ? ` · ${s.motivo}` : ""}
+                  </p>
+                  {s.estado !== "pendiente" ? (
+                    <p className="text-xs text-muted-foreground">
+                      {s.estado} por {s.aprobador ?? "Gerencia"}
+                      {s.resuelto_at ? ` · ${fechaHora(s.resuelto_at)}` : ""}
+                    </p>
+                  ) : null}
+                </div>
+                {s.estado === "pendiente" && esGerente && s.solicitado_por !== sesion?.perfil?.id ? (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="btn-gold hover:btn-gold-hover px-3 py-1 text-xs"
+                      onClick={() => mResolverAlta.mutate({ id: s.id, aprobar: true })}
+                    >
+                      Aprobar
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md border border-border px-3 py-1 text-xs"
+                      onClick={() => mResolverAlta.mutate({ id: s.id, aprobar: false })}
+                    >
+                      Rechazar
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    {s.estado}
+                  </span>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </section>
 
       <section className="mt-8">

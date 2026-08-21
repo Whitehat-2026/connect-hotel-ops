@@ -34,13 +34,14 @@ const nav = [
   { to: "/pedidos", label: "Pedidos", icon: PackageSearch, modulo: "pedidos" },
   { to: "/estrategia", label: "Estrategia", icon: LineChart },
   { to: "/auditoria", label: "Auditoría", icon: ScrollText, soloAuditoria: true },
-  { to: "/admin", label: "Administración", icon: Shield },
+  { to: "/admin", label: "Administración", icon: Shield, soloAdmin: true },
 ] as const;
 
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { sesion, roles, puedeVerVip, tieneRol } = useSesion();
   const puedeVerAuditoria = tieneRol("gerente", "admin", "supervisor");
+  const puedeVerAdmin = tieneRol("gerente", "admin");
   const { contadores } = useNotificaciones();
   const queryClient = useQueryClient();
   const registrarCierre = useServerFn(registrarCierreSesion);
@@ -100,7 +101,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 pb-2">
           {nav
             .filter((item) => !("soloVip" in item) || puedeVerVip)
-            .filter((item) => !("soloAuditoria" in item) || puedeVerAuditoria).map((item) => (
+            .filter((item) => !("soloAuditoria" in item) || puedeVerAuditoria)
+            .filter((item) => !("soloAdmin" in item) || puedeVerAdmin)
+            .map((item) => (
             <Link
               key={item.to}
               to={item.to}

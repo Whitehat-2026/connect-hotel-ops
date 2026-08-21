@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireUsuarioActivo } from "./auth-activo.middleware";
 import {
   accesoSensibleSchema,
+  altaResolverSchema,
   auditoriaFiltroSchema,
   bajaUsuarioSchema,
   nivelAreaSchema,
@@ -53,8 +54,12 @@ export const registrarCierreSesion = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Alta de cuenta autorizada (rol no crítico). Administración o Gerencia. */
-export const altaUsuario = createServerFn({ method: "POST" })
+/**
+ * Solicitud de alta de personal (doble control).
+ * Administración prepara la solicitud: NO se autoriza ninguna cuenta todavía.
+ * Sólo Gerencia puede aprobarla mediante `resolverAlta`.
+ */
+export const solicitarAlta = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => usuarioAltaSchema.parse(input))
   .handler(async ({ data, context }) => {
@@ -66,31 +71,141 @@ export const altaUsuario = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!area.data) throw new Error("El área indicada no existe.");
 
-    const { error } = await supabase.from("demo_accounts").insert({
-      email: data.email,
-      nombre: data.nombre,
-      area_codigo: area.data.codigo,
-      role: data.role,
-    });
+    const yaAutorizada = await supabase
+      .from("demo_accounts")
+      .select("email")
+      .eq("email", data.email)
+      .maybeSingle();
+    if (yaAutorizada.data) throw new Error("Ese correo ya está autorizado.");
+
+    const pendiente = await supabase
+      .from("account_requests")
+      .select("id")
+      .eq("email", data.email)
+      .eq("estado", "pendiente")
+      .maybeSingle();
+    if (pendiente.data) throw new Error("Ya existe una solicitud pendiente para ese correo.");
+
+    const { data: creada, error } = await supabase
+      .from("account_requests")
+      .insert({
+        email: data.email,
+        nombre: data.nombre,
+        area_codigo: area.data.codigo,
+        rol_solicitado: data.role,
+        motivo: data.motivo ?? null,
+        estado: "pendiente",
+        solicitado_por: userId,
+      })
+      .select("id")
+      .single();
     if (error) {
       await registrarAuditoria(supabase, userId, {
         categoria: "administracion",
-        accion: "alta_usuario",
-        recurso: "cuenta_autorizada",
+        accion: "solicitud_alta",
+        recurso: "account_requests",
         resultado: "rechazado",
-        detalle: `No autorizada o duplicada: ${data.email}`,
+        detalle: `No autorizada: ${data.email}`,
       });
-      throw new Error(
-        /duplicate|unique/i.test(error.message)
-          ? "Ese correo ya está autorizado."
-          : "No tiene autorización para dar de alta esta cuenta.",
-      );
+      throw new Error("No tiene autorización para solicitar esta alta.");
     }
+
     await registrarAuditoria(supabase, userId, {
       categoria: "administracion",
-      accion: "alta_usuario",
-      recurso: "cuenta_autorizada",
+      accion: "solicitud_alta",
+      recurso: "account_requests",
+      recurso_id: creada.id,
+      resultado: "pendiente",
       detalle: `${data.email} · rol ${data.role} · área ${area.data.codigo}`,
+    });
+    return { ok: true };
+  });
+
+/** Listado de solicitudes de alta (RLS: Gerencia, Administración o propias). */
+export const listarAltas = createServerFn({ method: "GET" })
+  .middleware([requireUsuarioActivo])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("account_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    const ids = [
+      ...new Set((data ?? []).flatMap((s) => [s.solicitado_por, s.aprobado_por].filter(Boolean))),
+    ] as string[];
+    const perfiles = ids.length
+      ? (await context.supabase.from("profiles").select("id, nombre").in("id", ids)).data ?? []
+      : [];
+    const nombre = (id?: string | null) => perfiles.find((p) => p.id === id)?.nombre ?? null;
+    return (data ?? []).map((s) => ({
+      ...s,
+      solicitante: nombre(s.solicitado_por),
+      aprobador: nombre(s.aprobado_por),
+    }));
+  });
+
+/**
+ * Resolución de alta por Gerencia General.
+ * Sólo al aprobar se autoriza la cuenta (inserción en la lista blanca), con el
+ * rol y área exactos de la solicitud. Nadie puede resolver su propia solicitud.
+ */
+export const resolverAlta = createServerFn({ method: "POST" })
+  .middleware([requireUsuarioActivo])
+  .inputValidator((input: unknown) => altaResolverSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: esGerente } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "gerente",
+    });
+    if (!esGerente) throw new Error("Sólo Gerencia General puede autorizar altas de personal.");
+
+    const solicitud = await supabase
+      .from("account_requests")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!solicitud.data) throw new Error("Solicitud no encontrada.");
+    if (solicitud.data.estado !== "pendiente") throw new Error("La solicitud ya fue resuelta.");
+    if (solicitud.data.solicitado_por === userId)
+      throw new Error("No puede resolver su propia solicitud de alta.");
+
+    const estado = data.aprobar ? "aprobada" : "rechazada";
+    const actualizada = await supabase
+      .from("account_requests")
+      .update({
+        estado,
+        aprobado_por: userId,
+        comentario: data.comentario ?? null,
+        resuelto_at: new Date().toISOString(),
+      })
+      .eq("id", data.id)
+      .eq("estado", "pendiente")
+      .select("id");
+    if (actualizada.error) throw new Error(actualizada.error.message);
+    if (!(actualizada.data ?? []).length) throw new Error("No fue posible resolver la solicitud.");
+
+    if (data.aprobar) {
+      // Autorización efectiva de la cuenta: operación privilegiada ya aprobada.
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const ins = await supabaseAdmin.from("demo_accounts").insert({
+        email: solicitud.data.email,
+        nombre: solicitud.data.nombre,
+        area_codigo: solicitud.data.area_codigo,
+        role: solicitud.data.rol_solicitado,
+      });
+      if (ins.error && !/duplicate|unique/i.test(ins.error.message))
+        throw new Error(ins.error.message);
+    }
+
+    await registrarAuditoria(supabase, userId, {
+      categoria: "administracion",
+      accion: data.aprobar ? "alta_aprobada" : "alta_rechazada",
+      recurso: "account_requests",
+      recurso_id: data.id,
+      resultado: data.aprobar ? "ok" : "rechazado",
+      aprobado_por: userId,
+      detalle: `${solicitud.data.email} · rol ${solicitud.data.rol_solicitado} · área ${solicitud.data.area_codigo}`,
     });
     return { ok: true };
   });
