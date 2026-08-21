@@ -11,6 +11,8 @@ import { ProtectedRoute } from "@/components/hotel/ProtectedRoute";
 import { crearVip, listarVips } from "@/lib/hotel.functions";
 import { vipCrearSchema } from "@/lib/hotel.schemas";
 
+const MODULO_VIP = "vip" as const;
+
 export const Route = createFileRoute("/_authenticated/vip")({
   head: () => ({
     meta: [
