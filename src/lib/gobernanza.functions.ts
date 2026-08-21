@@ -337,7 +337,59 @@ export const cambiarEstadoUsuario = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (!data.activo && !data.motivo) throw new Error("Indique el motivo de la baja.");
-    if (data.user_id === userId) throw new Error("No puede modificar su propio acceso.");
+
+    const rechazar = async (mensaje: string) => {
+      await registrarAuditoria(supabase, userId, {
+        categoria: "seguridad",
+        accion: "baja_autoridad_rechazada",
+        recurso: "profiles",
+        recurso_id: data.user_id,
+        resultado: "rechazado",
+        detalle: mensaje,
+      });
+      throw new Error(mensaje);
+    };
+
+    if (data.user_id === userId) await rechazar("No puede modificar su propio acceso.");
+
+    if (!data.activo) {
+      // Protección de autoridades (además del control en base de datos).
+      const RANGO: Record<string, number> = {
+        gerente: 3,
+        admin: 2,
+        supervisor: 1,
+        colaborador: 0,
+      };
+      const [rolesActor, rolesObjetivo, activos] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.from("user_roles").select("role").eq("user_id", data.user_id),
+        supabase.from("profiles").select("id, activo"),
+      ]);
+      const rango = (r: { role: string }[] | null) =>
+        Math.max(0, ...(r ?? []).map((x) => RANGO[x.role] ?? 0));
+      const rangoActor = rango(rolesActor.data);
+      const rangoObjetivo = rango(rolesObjetivo.data);
+      const tiene = (r: { role: string }[] | null, rol: string) =>
+        (r ?? []).some((x) => x.role === rol);
+
+      if (tiene(rolesObjetivo.data, "gerente") && rangoActor < 3)
+        await rechazar("Sólo Gerencia General puede desactivar una cuenta de Gerencia.");
+      if (rangoObjetivo >= rangoActor)
+        await rechazar("No puede desactivar una cuenta de autoridad igual o superior.");
+
+      if (tiene(rolesObjetivo.data, "admin") || tiene(rolesObjetivo.data, "gerente")) {
+        const todos = await supabase.from("user_roles").select("user_id, role");
+        const activosIds = new Set(
+          (activos.data ?? []).filter((p) => p.activo && p.id !== data.user_id).map((p) => p.id),
+        );
+        const restantes = (rol: string) =>
+          (todos.data ?? []).filter((r) => r.role === rol && activosIds.has(r.user_id)).length;
+        if (tiene(rolesObjetivo.data, "admin") && restantes("admin") === 0)
+          await rechazar("Debe permanecer al menos una cuenta de Administración activa.");
+        if (tiene(rolesObjetivo.data, "gerente") && restantes("gerente") === 0)
+          await rechazar("Debe permanecer al menos una cuenta de Gerencia activa.");
+      }
+    }
 
     const { error } = await supabase
       .from("profiles")
