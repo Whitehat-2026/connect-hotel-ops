@@ -40,6 +40,8 @@ function Incidencias() {
   const crear = useServerFn(crearIncidencia);
   const actualizar = useServerFn(actualizarIncidencia);
 
+  const puedeGestionar = tieneRol("supervisor", "admin", "gerente");
+
   const [filtroEstado, setFiltroEstado] = useState("todas");
   const [detalle, setDetalle] = useState<Fila | null>(null);
   const [form, setForm] = useState({ titulo: "", descripcion: "", area_id: "", ubicacion: "", prioridad: "media" });
@@ -112,17 +114,23 @@ function Incidencias() {
       header: "Acciones",
       render: (r) => (
         <div className="flex flex-col gap-2">
-          <select
-            className="field w-40 py-1 text-xs"
-            value={r.estado}
-            onChange={(e) => mEstado.mutate({ id: r.id, estado: e.target.value })}
-          >
-            {["abierta", "en_proceso", "escalada", "resuelta", "cerrada"].map((e) => (
-              <option key={e} value={e}>
-                {e.replace("_", " ")}
-              </option>
-            ))}
-          </select>
+          {puedeGestionar ? (
+            <select
+              className="field w-40 py-1 text-xs"
+              value={r.estado}
+              onChange={(e) => mEstado.mutate({ id: r.id, estado: e.target.value })}
+            >
+              {["abierta", "en_proceso", "escalada", "resuelta", "cerrada"].map((e) => (
+                <option key={e} value={e}>
+                  {e.replace("_", " ")}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
+              Gestión a cargo de Supervisión
+            </span>
+          )}
           <button
             type="button"
             className="rounded-md border border-primary/40 px-2 py-1 text-[11px] uppercase tracking-[0.1em] text-primary"
@@ -155,7 +163,7 @@ function Incidencias() {
     <div>
       <PageHeader
         titulo="Incidencias"
-        descripcion="Reporte inmediato con área responsable, prioridad y estado de resolución."
+        descripcion="Registre incidencias de su área y consulte su seguimiento. La gestión de estados corresponde a Supervisión, Administración y Gerencia."
         accion={
           <select className="field w-48" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
             <option value="todas">Todas</option>
@@ -189,7 +197,7 @@ function Incidencias() {
           </select>
           <textarea className="field md:col-span-4" rows={2} placeholder="Descripción y contexto" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} maxLength={2000} />
           <button className="btn-gold hover:btn-gold-hover px-4 py-2 text-sm" disabled={mCrear.isPending}>
-            {mCrear.isPending ? "Registrando…" : "Registrar"}
+            {mCrear.isPending ? "Registrando…" : "Registrar incidencia"}
           </button>
         </form>
       ) : null}
