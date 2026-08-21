@@ -26,6 +26,15 @@ export const Route = createFileRoute("/_authenticated/auditoria")({
 
 type Evento = Awaited<ReturnType<typeof listarAuditoria>>[number];
 
+/** Normaliza sólo la presentación: los valores históricos no se modifican. */
+function etiquetaResultado(valor: string | null): string {
+  const v = (valor ?? "").trim().toLowerCase();
+  if (["ok", "true", "vale", "exitoso", "éxito", "success"].includes(v)) return "Exitoso";
+  if (["rechazado", "false", "error", "denegado"].includes(v)) return "Rechazado";
+  if (v === "pendiente") return "Pendiente";
+  return valor ?? "—";
+}
+
 function Auditoria() {
   const fn = useServerFn(listarAuditoria);
   const registrar = useServerFn(registrarAccesoSensible);
