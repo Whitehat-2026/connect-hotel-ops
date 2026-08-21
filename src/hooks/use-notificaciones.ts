@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useRouterState } from "@tanstack/react-router";
 import { contarNotificaciones, marcarModuloVisto } from "@/lib/hotel.functions";
+import { audioHabilitado, beep, prepararAudio } from "@/lib/beep";
 
 export type Modulo = "incidencias" | "pedidos" | "comunicados" | "turnos" | "administracion";
 
