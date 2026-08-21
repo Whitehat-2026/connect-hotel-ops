@@ -33,7 +33,8 @@ export const Route = createFileRoute("/_authenticated/pedidos")({
 type Fila = Awaited<ReturnType<typeof listarPedidos>>[number];
 
 function Pedidos() {
-  const { sesion, esGerencia } = useSesion();
+  const { sesion, esGerencia, tieneRol } = useSesion();
+  const puedeGestionar = tieneRol("supervisor", "admin", "gerente");
   const qc = useQueryClient();
   const listar = useServerFn(listarPedidos);
   const crear = useServerFn(crearPedido);
@@ -81,6 +82,7 @@ function Pedidos() {
 
   /** Estados disponibles: los operativos circulan directo; los de alta prioridad pasan por gerencia. */
   function estadosDisponibles(r: Fila) {
+    if (!puedeGestionar) return [] as string[];
     const operativos = ["solicitado", "en_proceso", "entregado", "cerrado"];
     if (esGerencia) return ["solicitado", "aprobado", "rechazado", "en_proceso", "entregado", "cerrado"];
     if (requiereAprobacion(r) && !r.aprobado_por) return [];
@@ -141,7 +143,9 @@ function Pedidos() {
                 ))}
               </select>
             ) : (
-              <span className="text-xs text-muted-foreground">Esperando gerencia</span>
+              <span className="text-xs text-muted-foreground">
+                {puedeGestionar ? "Esperando gerencia" : "Gestión a cargo de Supervisión"}
+              </span>
             )}
             <button
               type="button"
@@ -174,7 +178,7 @@ function Pedidos() {
 
   return (
     <div>
-      <PageHeader titulo="Pedidos internos" descripcion="Requisiciones entre áreas con aprobación de gerencia y trazabilidad de entrega." />
+      <PageHeader titulo="Pedidos internos" descripcion="Solicite recursos a otras áreas y siga su avance. La aprobación y el cambio de estado corresponden a Supervisión y Gerencia." />
 
       <form onSubmit={enviar} className="surface mb-8 grid gap-3 p-5 md:grid-cols-4">
         <input className="field md:col-span-2" placeholder="Qué se solicita" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} maxLength={140} required />
