@@ -44,7 +44,7 @@ type Usuario = Awaited<ReturnType<typeof listarUsuarios>>[number];
 
 function Admin() {
   const qc = useQueryClient();
-  const { sesion, tieneRol } = useSesion();
+  const { sesion, tieneRol, roles: misRoles } = useSesion();
   const esGerente = tieneRol("gerente");
   /** Sólo Administración origina solicitudes de alta; Gerencia únicamente resuelve. */
   const puedeSolicitarAlta = tieneRol("admin") && !esGerente;
@@ -167,7 +167,33 @@ function Admin() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /**
+   * Refleja en la interfaz las protecciones que ya existen en el backend
+   * (rango de autoridad, autobaja y última cuenta activa de cada autoridad).
+   */
+  const RANGO: Record<string, number> = { gerente: 3, admin: 2, supervisor: 1, colaborador: 0 };
+  const rangoDe = (roles: readonly string[]) => Math.max(0, ...roles.map((r) => RANGO[r] ?? 0));
+  const miId = sesion?.perfil?.id;
+  const miRango = rangoDe(misRoles);
+  const adminsActivos = data.filter((u) => u.activo && u.roles.includes("admin")).length;
+  const gerentesActivos = data.filter((u) => u.activo && u.roles.includes("gerente")).length;
+
+  function puedeDarDeBaja(u: Usuario): { permitido: boolean; motivo?: string } {
+    if (u.id === miId) return { permitido: false, motivo: "No puede dar de baja su propia cuenta." };
+    const rangoObjetivo = rangoDe(u.roles);
+    if (u.roles.includes("gerente") && miRango < 3)
+      return { permitido: false, motivo: "Sólo Gerencia General puede desactivar una cuenta de Gerencia." };
+    if (rangoObjetivo >= miRango)
+      return { permitido: false, motivo: "No puede desactivar una autoridad igual o superior." };
+    if (u.roles.includes("admin") && adminsActivos <= 1)
+      return { permitido: false, motivo: "Debe permanecer al menos una cuenta de Administración activa." };
+    if (u.roles.includes("gerente") && gerentesActivos <= 1)
+      return { permitido: false, motivo: "Debe permanecer al menos una cuenta de Gerencia activa." };
+    return { permitido: true };
+  }
+
   const columnas: Columna<Usuario>[] = [
+
     {
       key: "nombre",
       header: "Colaborador",
@@ -219,24 +245,42 @@ function Admin() {
     {
       key: "activo",
       header: "Acceso",
-      render: (u) => (
-        <button
-          type="button"
-          className="rounded-md border border-border px-3 py-1 text-xs hover:border-primary/50"
-          onClick={() => {
-            if (u.activo) {
+      render: (u) => {
+        const permiso = puedeDarDeBaja(u);
+        if (!u.activo) {
+          return (
+            <button
+              type="button"
+              className="rounded-md border border-border px-3 py-1 text-xs hover:border-primary/50"
+              onClick={() => mEstado.mutate({ user_id: u.id, activo: true })}
+            >
+              Reactivar
+            </button>
+          );
+        }
+        if (!permiso.permitido) {
+          return (
+            <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground" title={permiso.motivo}>
+              Protegido
+            </span>
+          );
+        }
+        return (
+          <button
+            type="button"
+            className="rounded-md border border-border px-3 py-1 text-xs hover:border-primary/50"
+            onClick={() => {
               const motivo = window.prompt("Motivo de la baja (queda registrado en la bitácora):");
               if (!motivo) return;
               mEstado.mutate({ user_id: u.id, activo: false, motivo });
-            } else {
-              mEstado.mutate({ user_id: u.id, activo: true });
-            }
-          }}
-        >
-          {u.activo ? "Dar de baja" : "Reactivar"}
-        </button>
-      ),
+            }}
+          >
+            Dar de baja
+          </button>
+        );
+      },
     },
+
   ];
 
   function enviarArea(e: React.FormEvent) {

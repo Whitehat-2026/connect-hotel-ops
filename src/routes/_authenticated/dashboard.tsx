@@ -150,7 +150,7 @@ function Dashboard() {
         <section className="surface mt-6 p-5">
           <h2 className="font-display text-xl">Gobernanza y seguridad</h2>
           <div className="gold-rule mt-2 w-16" />
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="mt-4 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
             <div>
               <p className="text-2xl text-primary">{gobernanza.data.usuariosActivos}</p>
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Usuarios activos</p>
@@ -163,7 +163,28 @@ function Dashboard() {
               <p className="text-2xl text-primary">{gobernanza.data.solicitudesPendientes}</p>
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Privilegios pendientes</p>
             </div>
+            <div>
+              <p className="text-2xl text-primary">{gobernanza.data.altasPendientes}</p>
+              <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Altas pendientes</p>
+            </div>
+            <div>
+              <p className="text-2xl text-primary">{gobernanza.data.incidenciasRelevantes}</p>
+              <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Incidencias relevantes</p>
+            </div>
+            <div>
+              <p className="text-2xl text-primary">{gobernanza.data.pedidosPendientes}</p>
+              <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Pedidos en curso</p>
+            </div>
           </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {gobernanza.data.areas.map((a) => (
+              <span key={a.id} className="rounded-full border border-border px-3 py-1 text-[11px]">
+                {a.codigo} · {a.nombre}
+                <span className="ml-2 uppercase tracking-[0.15em] text-primary/80">{a.nivel}</span>
+              </span>
+            ))}
+          </div>
+
           <ul className="mt-4 space-y-2">
             {gobernanza.data.eventosRecientes.map((e) => (
               <li key={e.id} className="border-b border-border/60 pb-2 text-sm last:border-0">
