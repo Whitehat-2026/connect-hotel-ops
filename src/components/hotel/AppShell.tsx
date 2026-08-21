@@ -101,7 +101,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 pb-2">
           {nav
             .filter((item) => !("soloVip" in item) || puedeVerVip)
-            .filter((item) => !("soloAuditoria" in item) || puedeVerAuditoria).map((item) => (
+            .filter((item) => !("soloAuditoria" in item) || puedeVerAuditoria)
+            .filter((item) => !("soloAdmin" in item) || puedeVerAdmin)
+            .map((item) => (
             <Link
               key={item.to}
               to={item.to}
