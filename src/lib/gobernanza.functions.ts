@@ -440,9 +440,12 @@ export const resumenGobernanza = createServerFn({ method: "GET" })
   .middleware([requireUsuarioActivo])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const [perfiles, solicitudes, eventos, areas] = await Promise.all([
+    const [perfiles, solicitudes, altas, incidencias, pedidos, eventos, areas] = await Promise.all([
       supabase.from("profiles").select("id, activo"),
       supabase.from("privilege_requests").select("id, estado"),
+      supabase.from("account_requests").select("id, estado"),
+      supabase.from("incidents").select("id, estado, prioridad"),
+      supabase.from("internal_requests").select("id, estado, prioridad"),
       supabase
         .from("audit_log")
         .select("id, accion, detalle, categoria, actor_nombre, created_at")
@@ -456,7 +459,17 @@ export const resumenGobernanza = createServerFn({ method: "GET" })
       usuariosActivos: p.filter((x) => x.activo).length,
       usuariosInactivos: p.filter((x) => !x.activo).length,
       solicitudesPendientes: (solicitudes.data ?? []).filter((s) => s.estado === "pendiente").length,
+      altasPendientes: (altas.data ?? []).filter((s) => s.estado === "pendiente").length,
+      incidenciasRelevantes: (incidencias.data ?? []).filter(
+        (i) =>
+          ["abierta", "en_proceso", "escalada"].includes(i.estado) &&
+          ["alta", "critica"].includes(i.prioridad),
+      ).length,
+      pedidosPendientes: (pedidos.data ?? []).filter((r) =>
+        ["solicitado", "aprobado", "en_proceso"].includes(r.estado),
+      ).length,
       eventosRecientes: eventos.data ?? [],
       areas: areas.data ?? [],
     };
   });
+
