@@ -167,7 +167,33 @@ function Admin() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /**
+   * Refleja en la interfaz las protecciones que ya existen en el backend
+   * (rango de autoridad, autobaja y última cuenta activa de cada autoridad).
+   */
+  const RANGO: Record<string, number> = { gerente: 3, admin: 2, supervisor: 1, colaborador: 0 };
+  const rangoDe = (roles: readonly string[]) => Math.max(0, ...roles.map((r) => RANGO[r] ?? 0));
+  const miId = sesion?.perfil?.id;
+  const miRango = rangoDe(roles);
+  const adminsActivos = data.filter((u) => u.activo && u.roles.includes("admin")).length;
+  const gerentesActivos = data.filter((u) => u.activo && u.roles.includes("gerente")).length;
+
+  function puedeDarDeBaja(u: Usuario): { permitido: boolean; motivo?: string } {
+    if (u.id === miId) return { permitido: false, motivo: "No puede dar de baja su propia cuenta." };
+    const rangoObjetivo = rangoDe(u.roles);
+    if (u.roles.includes("gerente") && miRango < 3)
+      return { permitido: false, motivo: "Sólo Gerencia General puede desactivar una cuenta de Gerencia." };
+    if (rangoObjetivo >= miRango)
+      return { permitido: false, motivo: "No puede desactivar una autoridad igual o superior." };
+    if (u.roles.includes("admin") && adminsActivos <= 1)
+      return { permitido: false, motivo: "Debe permanecer al menos una cuenta de Administración activa." };
+    if (u.roles.includes("gerente") && gerentesActivos <= 1)
+      return { permitido: false, motivo: "Debe permanecer al menos una cuenta de Gerencia activa." };
+    return { permitido: true };
+  }
+
   const columnas: Columna<Usuario>[] = [
+
     {
       key: "nombre",
       header: "Colaborador",
