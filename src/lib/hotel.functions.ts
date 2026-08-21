@@ -350,9 +350,19 @@ export const cambiarEstadoPedido = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!pedido.data) throw new Error("Pedido no encontrado");
 
+    // Un Colaborador crea y consulta pedidos, pero no cambia estados ni aprueba.
+    const roles = (
+      (await supabase.from("user_roles").select("role").eq("user_id", userId)).data ?? []
+    ).map((r) => r.role);
+    if (!roles.some((r) => ["supervisor", "admin", "gerente"].includes(r)))
+      throw new Error(
+        "Su rol puede crear y consultar pedidos, pero no modificar su estado ni aprobarlos.",
+      );
+
     const requiereAprobacion =
       pedido.data.prioridad === "alta" || pedido.data.prioridad === "critica";
     const { data: esGerencia } = await supabase.rpc("es_gerencia", { _user_id: userId });
+
 
     if (data.estado === "aprobado" || data.estado === "rechazado") {
       if (!esGerencia) throw new Error("Solo gerencia puede aprobar o rechazar pedidos");
