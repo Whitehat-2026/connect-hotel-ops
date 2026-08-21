@@ -77,10 +77,15 @@ function Admin() {
     queryKey: ["solicitudes-privilegio"],
     queryFn: () => solicitudesFn(),
   });
+  const { data: altas = [] } = useQuery({
+    queryKey: ["solicitudes-alta"],
+    queryFn: () => altasFn(),
+  });
 
   const refrescar = () => {
     qc.invalidateQueries({ queryKey: ["usuarios"] });
     qc.invalidateQueries({ queryKey: ["solicitudes-privilegio"] });
+    qc.invalidateQueries({ queryKey: ["solicitudes-alta"] });
     qc.invalidateQueries({ queryKey: ["auditoria"] });
   };
 
