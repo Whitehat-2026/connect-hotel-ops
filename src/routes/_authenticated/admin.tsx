@@ -219,24 +219,42 @@ function Admin() {
     {
       key: "activo",
       header: "Acceso",
-      render: (u) => (
-        <button
-          type="button"
-          className="rounded-md border border-border px-3 py-1 text-xs hover:border-primary/50"
-          onClick={() => {
-            if (u.activo) {
+      render: (u) => {
+        const permiso = puedeDarDeBaja(u);
+        if (!u.activo) {
+          return (
+            <button
+              type="button"
+              className="rounded-md border border-border px-3 py-1 text-xs hover:border-primary/50"
+              onClick={() => mEstado.mutate({ user_id: u.id, activo: true })}
+            >
+              Reactivar
+            </button>
+          );
+        }
+        if (!permiso.permitido) {
+          return (
+            <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground" title={permiso.motivo}>
+              Protegido
+            </span>
+          );
+        }
+        return (
+          <button
+            type="button"
+            className="rounded-md border border-border px-3 py-1 text-xs hover:border-primary/50"
+            onClick={() => {
               const motivo = window.prompt("Motivo de la baja (queda registrado en la bitácora):");
               if (!motivo) return;
               mEstado.mutate({ user_id: u.id, activo: false, motivo });
-            } else {
-              mEstado.mutate({ user_id: u.id, activo: true });
-            }
-          }}
-        >
-          {u.activo ? "Dar de baja" : "Reactivar"}
-        </button>
-      ),
+            }}
+          >
+            Dar de baja
+          </button>
+        );
+      },
     },
+
   ];
 
   function enviarArea(e: React.FormEvent) {
