@@ -25,17 +25,18 @@ import { RoleBadge } from "./Badges";
 import { Logo } from "./Logo";
 
 const nav = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Panel general", icon: LayoutDashboard },
   { to: "/incidencias", label: "Incidencias", icon: AlertTriangle, modulo: "incidencias" },
   { to: "/turnos", label: "Turnos", icon: ClipboardList, modulo: "turnos" },
   { to: "/comunicados", label: "Comunicados", icon: Megaphone, modulo: "comunicados" },
   { to: "/vip", label: "VIP", icon: Crown, soloVip: true },
   { to: "/checklists", label: "Checklists", icon: CheckSquare },
   { to: "/pedidos", label: "Pedidos", icon: PackageSearch, modulo: "pedidos" },
-  { to: "/estrategia", label: "Estrategia", icon: LineChart },
+  { to: "/estrategia", label: "Estrategia", icon: LineChart, soloEstrategia: true },
   { to: "/auditoria", label: "Auditoría", icon: ScrollText, soloAuditoria: true },
   { to: "/admin", label: "Administración", icon: Shield, soloAdmin: true, modulo: "administracion" },
 ] as const;
+
 
 
 export function AppShell({ children }: { children: ReactNode }) {
