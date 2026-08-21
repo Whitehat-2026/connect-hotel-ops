@@ -252,7 +252,10 @@ function Admin() {
 
   function enviarAlta(e: React.FormEvent) {
     e.preventDefault();
-    const parsed = usuarioAltaSchema.safeParse(nuevo);
+    const parsed = usuarioAltaSchema.safeParse({
+      ...nuevo,
+      motivo: nuevo.motivo || undefined,
+    });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Datos inválidos");
       return;
