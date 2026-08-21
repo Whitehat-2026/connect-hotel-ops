@@ -60,7 +60,13 @@ function Admin() {
   const registrarAcceso = useServerFn(registrarAccesoSensible);
 
   const [form, setForm] = useState({ nombre: "", codigo: "", descripcion: "" });
-  const [nuevo, setNuevo] = useState({ email: "", nombre: "", area_codigo: "", role: "colaborador" });
+  const [nuevo, setNuevo] = useState({
+    email: "",
+    nombre: "",
+    area_codigo: "",
+    role: "colaborador",
+    motivo: "",
+  });
 
   useEffect(() => {
     registrarAcceso({ data: { modulo: "admin" } }).catch(() => undefined);
