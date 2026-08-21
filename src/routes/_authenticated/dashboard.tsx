@@ -26,6 +26,8 @@ import {
   listarChecklists,
   listarVips,
 } from "@/lib/hotel.functions";
+import { resumenGobernanza } from "@/lib/gobernanza.functions";
+import { fechaHora } from "@/lib/fecha";
 import { useSesion } from "@/hooks/use-sesion";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -46,11 +48,17 @@ function Dashboard() {
   const fnComunicados = useServerFn(listarComunicados);
   const fnChecklists = useServerFn(listarChecklists);
   const fnVips = useServerFn(listarVips);
+  const fnGobernanza = useServerFn(resumenGobernanza);
 
   const incidencias = useQuery({ queryKey: ["incidencias"], queryFn: () => fnIncidencias() });
   const comunicados = useQuery({ queryKey: ["comunicados"], queryFn: () => fnComunicados() });
   const checklists = useQuery({ queryKey: ["checklists"], queryFn: () => fnChecklists() });
   const vips = useQuery({ queryKey: ["vips"], queryFn: () => fnVips(), enabled: puedeVerVip });
+  const gobernanza = useQuery({
+    queryKey: ["gobernanza-resumen"],
+    queryFn: () => fnGobernanza(),
+    enabled: esGerencia,
+  });
 
   const inc = incidencias.data ?? [];
   const abiertas = inc.filter((i) => ["abierta", "en_proceso", "escalada"].includes(i.estado));
@@ -137,6 +145,41 @@ function Dashboard() {
           </ul>
         </section>
       </div>
+
+      {esGerencia && gobernanza.data ? (
+        <section className="surface mt-6 p-5">
+          <h2 className="font-display text-xl">Gobernanza y seguridad</h2>
+          <div className="gold-rule mt-2 w-16" />
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-2xl text-primary">{gobernanza.data.usuariosActivos}</p>
+              <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Usuarios activos</p>
+            </div>
+            <div>
+              <p className="text-2xl text-primary">{gobernanza.data.usuariosInactivos}</p>
+              <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Dados de baja</p>
+            </div>
+            <div>
+              <p className="text-2xl text-primary">{gobernanza.data.solicitudesPendientes}</p>
+              <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Privilegios pendientes</p>
+            </div>
+          </div>
+          <ul className="mt-4 space-y-2">
+            {gobernanza.data.eventosRecientes.map((e) => (
+              <li key={e.id} className="border-b border-border/60 pb-2 text-sm last:border-0">
+                <span className="text-foreground">{e.accion.replace(/_/g, " ")}</span>
+                <span className="text-xs text-muted-foreground">
+                  {" "}
+                  · {e.actor_nombre ?? "—"} · {fechaHora(e.created_at)}
+                </span>
+              </li>
+            ))}
+            {gobernanza.data.eventosRecientes.length === 0 ? (
+              <li className="text-sm text-muted-foreground">Sin eventos sensibles recientes.</li>
+            ) : null}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }
