@@ -44,7 +44,7 @@ type Usuario = Awaited<ReturnType<typeof listarUsuarios>>[number];
 
 function Admin() {
   const qc = useQueryClient();
-  const { sesion, tieneRol } = useSesion();
+  const { sesion, tieneRol, roles: misRoles } = useSesion();
   const esGerente = tieneRol("gerente");
   /** Sólo Administración origina solicitudes de alta; Gerencia únicamente resuelve. */
   const puedeSolicitarAlta = tieneRol("admin") && !esGerente;
