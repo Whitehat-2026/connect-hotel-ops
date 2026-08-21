@@ -13,10 +13,10 @@ import {
   rolAsignarSchema,
   turnoCrearSchema,
   turnoFirmarSchema,
-  usuarioActivoSchema,
   vipCrearSchema,
 } from "./hotel.schemas";
 import { conReintento, limpiar } from "./hotel.server";
+import { registrarAuditoria } from "./gobernanza.server";
 
 /** Sesión: perfil, roles y catálogo de áreas. */
 
