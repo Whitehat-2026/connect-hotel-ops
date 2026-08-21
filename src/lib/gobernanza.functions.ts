@@ -64,6 +64,15 @@ export const solicitarAlta = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => usuarioAltaSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Separación de funciones: Gerencia revisa y aprueba, no origina altas.
+    const { data: esGerente } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "gerente",
+    });
+    if (esGerente)
+      throw new Error(
+        "Gerencia General no origina solicitudes de alta: sólo Administración puede prepararlas.",
+      );
     const area = await supabase
       .from("areas")
       .select("id, codigo")
