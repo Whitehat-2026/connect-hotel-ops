@@ -111,8 +111,17 @@ function Admin() {
   const mAlta = useMutation({
     mutationFn: (input: unknown) => alta({ data: input as never }),
     onSuccess: () => {
-      toast.success("Cuenta autorizada creada");
-      setNuevo({ email: "", nombre: "", area_codigo: "", role: "colaborador" });
+      toast.success("Solicitud de alta enviada a Gerencia General");
+      setNuevo({ email: "", nombre: "", area_codigo: "", role: "colaborador", motivo: "" });
+      refrescar();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const mResolverAlta = useMutation({
+    mutationFn: (input: { id: string; aprobar: boolean }) => resolverAltaFn({ data: input }),
+    onSuccess: () => {
+      toast.success("Solicitud de alta resuelta");
       refrescar();
     },
     onError: (e: Error) => toast.error(e.message),
