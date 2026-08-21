@@ -4,13 +4,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { useRouterState } from "@tanstack/react-router";
 import { contarNotificaciones, marcarModuloVisto } from "@/lib/hotel.functions";
 
-export type Modulo = "incidencias" | "pedidos" | "comunicados" | "turnos";
+export type Modulo = "incidencias" | "pedidos" | "comunicados" | "turnos" | "administracion";
 
 const rutaModulo: Record<string, Modulo> = {
   "/incidencias": "incidencias",
   "/pedidos": "pedidos",
   "/comunicados": "comunicados",
   "/turnos": "turnos",
+  "/admin": "administracion",
 };
 
 /** Beep breve y discreto generado localmente con WebAudio. */
@@ -90,7 +91,7 @@ export function useNotificaciones() {
   }, [pathname]);
 
   return {
-    contadores: (data ?? { incidencias: 0, pedidos: 0, comunicados: 0, turnos: 0 }) as Record<
+    contadores: (data ?? { incidencias: 0, pedidos: 0, comunicados: 0, turnos: 0, administracion: 0 }) as Record<
       Modulo,
       number
     >,

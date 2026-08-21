@@ -476,11 +476,33 @@ export const contarNotificaciones = createServerFn({ method: "GET" })
       (t) => !t.firma_recepcion || t.created_at > desdeTurnos,
     ).length;
 
+    // Gobernanza: pendientes de resolución para Gerencia y resoluciones nuevas
+    // para el Administrador que originó la solicitud.
+    const [altas, privilegios, roles] = await Promise.all([
+      supabase.from("account_requests").select("estado, solicitado_por, resuelto_at"),
+      supabase.from("privilege_requests").select("estado, solicitado_por, resuelto_at"),
+      supabase.from("user_roles").select("role").eq("user_id", userId),
+    ]);
+    const misRoles = (roles.data ?? []).map((r) => r.role);
+    const desdeAdmin = desde("administracion");
+    const filas = [...(altas.data ?? []), ...(privilegios.data ?? [])];
+    const administracion = misRoles.includes("gerente")
+      ? filas.filter((f) => f.estado === "pendiente" && f.solicitado_por !== userId).length
+      : misRoles.includes("admin")
+        ? filas.filter(
+            (f) =>
+              f.solicitado_por === userId &&
+              f.estado !== "pendiente" &&
+              (f.resuelto_at ?? "") > desdeAdmin,
+          ).length
+        : 0;
+
     return {
       incidencias: incidencias.count ?? 0,
       pedidos: pedidos.count ?? 0,
       comunicados: sinLeer,
       turnos: turnosPendientes,
+      administracion,
     };
   });
 
