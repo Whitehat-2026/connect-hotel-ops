@@ -43,7 +43,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { sesion, roles, puedeVerVip, tieneRol } = useSesion();
   const puedeVerAuditoria = tieneRol("gerente", "admin", "supervisor");
   const puedeVerAdmin = tieneRol("gerente", "admin");
+  const puedeVerEstrategia = tieneRol("gerente", "admin");
   const { contadores } = useNotificaciones();
+
   const queryClient = useQueryClient();
   const registrarCierre = useServerFn(registrarCierreSesion);
 
