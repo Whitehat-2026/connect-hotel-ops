@@ -63,6 +63,7 @@ function Admin() {
   const registrarAcceso = useServerFn(registrarAccesoSensible);
 
   const [form, setForm] = useState({ nombre: "", codigo: "", descripcion: "" });
+  const [verHistorialAltas, setVerHistorialAltas] = useState(false);
   const [nuevo, setNuevo] = useState({
     email: "",
     nombre: "",
@@ -408,6 +409,15 @@ function Admin() {
               </div>
             ))
           )}
+          {!verHistorialAltas && altasResueltas.length > 5 ? (
+            <button
+              type="button"
+              className="pt-3 text-xs uppercase tracking-[0.12em] text-primary"
+              onClick={() => setVerHistorialAltas(true)}
+            >
+              Ver historial completo ({altasResueltas.length})
+            </button>
+          ) : null}
         </div>
       </section>
 
