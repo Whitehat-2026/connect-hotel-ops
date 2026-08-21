@@ -46,6 +46,8 @@ function Admin() {
   const qc = useQueryClient();
   const { sesion, tieneRol } = useSesion();
   const esGerente = tieneRol("gerente");
+  /** Sólo Administración origina solicitudes de alta; Gerencia únicamente resuelve. */
+  const puedeSolicitarAlta = tieneRol("admin") && !esGerente;
   const listar = useServerFn(listarUsuarios);
   const rol = useServerFn(asignarRol);
   const estadoUsuario = useServerFn(cambiarEstadoUsuario);
@@ -274,6 +276,7 @@ function Admin() {
 
       <DataTable columnas={columnas} filas={data} vacio="Sin usuarios registrados" />
 
+      {puedeSolicitarAlta ? (
       <section className="mt-8">
         <h2 className="font-display text-2xl">Solicitud de alta de personal</h2>
         <div className="gold-rule mt-2 w-16" />
@@ -299,6 +302,7 @@ function Admin() {
           </button>
         </form>
       </section>
+      ) : null}
 
       <section className="mt-8">
         <h2 className="font-display text-2xl">Solicitudes de alta</h2>
