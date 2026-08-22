@@ -131,6 +131,12 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Desbloqueo del audio desde la raíz: así el propio clic de ingreso al
+  // login ya habilita Web Audio antes de que existan notificaciones.
+  useEffect(() => {
+    prepararAudio();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
