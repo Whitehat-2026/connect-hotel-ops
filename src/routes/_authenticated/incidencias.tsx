@@ -283,12 +283,20 @@ function Incidencias() {
 
             <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
               <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Reportado por</dt>
+                <dd>{detalle.reportante ?? "No registrado"}</dd>
+              </div>
+              <div>
                 <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Área que reporta</dt>
                 <dd>{detalle.origen?.nombre ?? "No registrada"}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Área responsable</dt>
                 <dd>{detalle.areas?.nombre ?? "Sin asignar"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Estado</dt>
+                <dd><StatusBadge estado={estadoVisual(detalle)} /></dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Ubicación</dt>
@@ -299,14 +307,27 @@ function Incidencias() {
                 <dd>{fechaHora(detalle.created_at)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Primera respuesta</dt>
-                <dd>{fechaHora(detalle.primera_respuesta_at)}</dd>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Recibida por</dt>
+                <dd>
+                  {detalle.recepcion
+                    ? `${detalle.recepcion.nombre ?? "Supervisor"} · ${detalle.recepcion.area ?? "—"} · ${fechaHora(detalle.recepcion.at)}`
+                    : "Pendiente de recepción"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Tiempo hasta recepción</dt>
+                <dd>
+                  {detalle.recepcion
+                    ? `${Math.max(0, Math.round((new Date(detalle.recepcion.at).getTime() - new Date(detalle.created_at).getTime()) / 60000))} min`
+                    : "—"}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Resolución</dt>
                 <dd>{fechaHora(detalle.resuelta_at)}</dd>
               </div>
             </dl>
+
 
             <h3 className="mt-6 font-display text-lg">Trazabilidad</h3>
             <div className="mt-3">
