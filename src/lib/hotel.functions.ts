@@ -53,8 +53,53 @@ export const listarIncidencias = createServerFn({ method: "GET" })
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const filas = data ?? [];
+    if (filas.length === 0) return [];
+
+    // Recepción formal: sólo cuenta si existe el evento tipo 'recibida'.
+    const { data: recepciones } = await context.supabase
+      .from("incident_events")
+      .select("incident_id, actor_id, created_at")
+      .eq("tipo", "recibida")
+      .in(
+        "incident_id",
+        filas.map((f) => f.id),
+      );
+    const ids = [
+      ...new Set(
+        [
+          ...(recepciones ?? []).map((r) => r.actor_id),
+          ...filas.map((f) => f.created_by),
+        ].filter(Boolean),
+      ),
+    ] as string[];
+    const perfiles = ids.length
+      ? (
+          await context.supabase
+            .from("profiles")
+            .select("id, nombre, areas:areas(nombre)")
+            .in("id", ids)
+        ).data ?? []
+      : [];
+
+    return filas.map((f) => {
+      const rec = (recepciones ?? []).find((r) => r.incident_id === f.id) ?? null;
+      const perfil = rec ? perfiles.find((p) => p.id === rec.actor_id) : undefined;
+      return {
+        ...f,
+        reportante: perfiles.find((p) => p.id === f.created_by)?.nombre ?? null,
+        recepcion: rec
+          ? {
+              at: rec.created_at,
+              nombre: perfil?.nombre ?? null,
+              area: (perfil as { areas?: { nombre?: string } | null } | undefined)?.areas?.nombre ?? null,
+            }
+          : null,
+      };
+
+    });
   });
+
 
 export const listarEventosIncidencia = createServerFn({ method: "GET" })
   .middleware([requireUsuarioActivo])
@@ -102,43 +147,39 @@ export const crearIncidencia = createServerFn({ method: "POST" })
   });
 
 /**
- * Actualiza estado/prioridad/asignación de una incidencia.
- * Gestión reservada a Supervisor, Administración y Gerencia: un Colaborador
- * puede registrar y consultar, pero no modificar estados sensibles.
+ * Recepción formal de una incidencia. Toda la validación (rol supervisor,
+ * área responsable, estado, concurrencia) y el registro del evento viven en la
+ * RPC transaccional `tomar_incidencia`.
+ */
+export const tomarIncidencia = createServerFn({ method: "POST" })
+  .middleware([requireUsuarioActivo])
+  .inputValidator((input: unknown) => idSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("tomar_incidencia", {
+      _incident_id: data.id,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/**
+ * Gestión posterior de estados: delegada íntegramente a la RPC
+ * `actualizar_estado_incidencia` (sólo el Supervisor que recibió la incidencia,
+ * con transiciones controladas en PostgreSQL).
  */
 export const actualizarIncidencia = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => incidenciaActualizarSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const roles = (
-      (await context.supabase.from("user_roles").select("role").eq("user_id", context.userId))
-        .data ?? []
-    ).map((r) => r.role);
-    const puedeGestionar = roles.some((r) => ["supervisor", "admin", "gerente"].includes(r));
-    if (!puedeGestionar)
-      throw new Error(
-        "Su rol puede registrar y consultar incidencias, pero no modificar su estado.",
-      );
-
-    const { id, ...cambios } = data;
-    const patch: Record<string, unknown> = { ...cambios };
-    if (cambios.estado === "en_proceso") patch["primera_respuesta_at"] = new Date().toISOString();
-
-    if (cambios.estado === "resuelta" || cambios.estado === "cerrada")
-      patch["resuelta_at"] = new Date().toISOString();
-    if (cambios.estado && cambios.estado !== "abierta") patch["asignado_a"] = context.userId;
-    const { error } = await context.supabase.from("incidents").update(limpiar(patch)).eq("id", id);
+    if (!data.estado) throw new Error("Indique el nuevo estado de la incidencia.");
+    const { error } = await context.supabase.rpc("actualizar_estado_incidencia", {
+      _incident_id: data.id,
+      _estado: data.estado,
+    });
     if (error) throw new Error(error.message);
-    if (cambios.estado) {
-      await context.supabase.from("incident_events").insert({
-        incident_id: id,
-        actor_id: context.userId,
-        tipo: "estado",
-        descripcion: `Estado actualizado a "${cambios.estado.replace("_", " ")}"`,
-      });
-    }
     return { ok: true };
   });
+
 
 /**
  * Entregas de turno.

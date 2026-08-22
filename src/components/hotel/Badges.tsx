@@ -6,6 +6,8 @@ const base =
 export function StatusBadge({ estado }: { estado: string }) {
   const map: Record<string, string> = {
     abierta: "border-warning/40 text-warning",
+    reportada: "border-warning/40 text-warning",
+    recibida: "border-primary/40 text-primary",
     en_proceso: "border-primary/40 text-primary",
     escalada: "border-danger/40 text-danger",
     resuelta: "border-success/40 text-success",
@@ -20,6 +22,7 @@ export function StatusBadge({ estado }: { estado: string }) {
       {estado.replace("_", " ")}
     </span>
   );
+
 }
 
 export function PriorityBadge({ prioridad }: { prioridad: string }) {

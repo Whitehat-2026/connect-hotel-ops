@@ -15,7 +15,9 @@ import {
   crearIncidencia,
   listarEventosIncidencia,
   listarIncidencias,
+  tomarIncidencia,
 } from "@/lib/hotel.functions";
+
 import { incidenciaCrearSchema } from "@/lib/hotel.schemas";
 
 
@@ -39,8 +41,11 @@ function Incidencias() {
   const listar = useServerFn(listarIncidencias);
   const crear = useServerFn(crearIncidencia);
   const actualizar = useServerFn(actualizarIncidencia);
+  const tomar = useServerFn(tomarIncidencia);
 
-  const puedeGestionar = tieneRol("supervisor", "admin", "gerente");
+  const esSupervisor = tieneRol("supervisor");
+  const miArea = sesion?.perfil?.area_id ?? null;
+  const miId = sesion?.userId ?? null;
 
   const [filtroEstado, setFiltroEstado] = useState("todas");
   const [detalle, setDetalle] = useState<Fila | null>(null);
@@ -65,16 +70,48 @@ function Incidencias() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const refrescar = () => {
+    qc.invalidateQueries({ queryKey: ["incidencias"] });
+    qc.invalidateQueries({ queryKey: ["incidencia-eventos"] });
+  };
+
   const mEstado = useMutation({
     mutationFn: (input: { id: string; estado: string }) => actualizar({ data: input as never }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["incidencias"] });
-      qc.invalidateQueries({ queryKey: ["incidencia-eventos"] });
+      toast.success("Estado actualizado");
+      refrescar();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const mTomar = useMutation({
+    mutationFn: (id: string) => tomar({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Incidencia recibida");
+      refrescar();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const filas = data.filter((i) => filtroEstado === "todas" || i.estado === filtroEstado);
+
+  /** Estado presentado: 'abierta' se desdobla en REPORTADA / RECIBIDA según recepción formal. */
+  const estadoVisual = (r: Fila) => (r.estado === "abierta" ? (r.recepcion ? "recibida" : "reportada") : r.estado);
+
+  /** Sólo el Supervisor del área responsable, distinto del creador, puede recibirla. */
+  const puedeTomar = (r: Fila) =>
+    esSupervisor && !r.recepcion && r.estado === "abierta" && r.area_id === miArea && r.created_by !== miId;
+
+  /** Gestión posterior: exclusiva del Supervisor asignado tras la recepción. */
+  const puedeGestionarFila = (r: Fila) =>
+    esSupervisor && Boolean(r.recepcion) && r.asignado_a === miId && r.estado !== "cerrada";
+
+  const transiciones: Record<string, string[]> = {
+    abierta: ["en_proceso"],
+    en_proceso: ["escalada", "resuelta"],
+    escalada: ["en_proceso", "resuelta"],
+    resuelta: ["cerrada"],
+  };
 
   const columnas: Columna<Fila>[] = [
     {
@@ -103,7 +140,21 @@ function Incidencias() {
       ),
     },
     { key: "prioridad", header: "Prioridad", render: (r) => <PriorityBadge prioridad={r.prioridad} /> },
-    { key: "estado", header: "Estado", render: (r) => <StatusBadge estado={r.estado} /> },
+    { key: "estado", header: "Estado", render: (r) => <StatusBadge estado={estadoVisual(r)} /> },
+    {
+      key: "recepcion",
+      header: "Recepción",
+      render: (r) =>
+        r.recepcion ? (
+          <span className="text-xs text-muted-foreground">
+            {r.recepcion.nombre ?? "Supervisor"} · {r.recepcion.area ?? "—"}
+            <br />
+            {fechaHora(r.recepcion.at)}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">Pendiente de recepción</span>
+        ),
+    },
     {
       key: "fecha",
       header: "Fecha / hora",
@@ -114,23 +165,35 @@ function Incidencias() {
       header: "Acciones",
       render: (r) => (
         <div className="flex flex-col gap-2">
-          {puedeGestionar ? (
+          {puedeTomar(r) ? (
+            <button
+              type="button"
+              className="btn-gold hover:btn-gold-hover px-3 py-1 text-[11px] uppercase tracking-[0.1em]"
+              disabled={mTomar.isPending}
+              onClick={() => mTomar.mutate(r.id)}
+            >
+              Tomar incidencia
+            </button>
+          ) : null}
+          {puedeGestionarFila(r) ? (
             <select
               className="field w-40 py-1 text-xs"
-              value={r.estado}
-              onChange={(e) => mEstado.mutate({ id: r.id, estado: e.target.value })}
+              value=""
+              onChange={(e) => e.target.value && mEstado.mutate({ id: r.id, estado: e.target.value })}
             >
-              {["abierta", "en_proceso", "escalada", "resuelta", "cerrada"].map((e) => (
+              <option value="">Cambiar estado…</option>
+              {(transiciones[r.estado] ?? []).map((e) => (
                 <option key={e} value={e}>
                   {e.replace("_", " ")}
                 </option>
               ))}
             </select>
-          ) : (
+          ) : null}
+          {!puedeTomar(r) && !puedeGestionarFila(r) ? (
             <span className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
-              Gestión a cargo de Supervisión
+              {r.recepcion ? "Gestión a cargo del Supervisor asignado" : "Sólo consulta"}
             </span>
-          )}
+          ) : null}
           <button
             type="button"
             className="rounded-md border border-primary/40 px-2 py-1 text-[11px] uppercase tracking-[0.1em] text-primary"
@@ -142,6 +205,7 @@ function Incidencias() {
       ),
     },
   ];
+
 
 
   function enviar(e: React.FormEvent) {
@@ -219,12 +283,20 @@ function Incidencias() {
 
             <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
               <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Reportado por</dt>
+                <dd>{detalle.reportante ?? "No registrado"}</dd>
+              </div>
+              <div>
                 <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Área que reporta</dt>
                 <dd>{detalle.origen?.nombre ?? "No registrada"}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Área responsable</dt>
                 <dd>{detalle.areas?.nombre ?? "Sin asignar"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Estado</dt>
+                <dd><StatusBadge estado={estadoVisual(detalle)} /></dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Ubicación</dt>
@@ -235,14 +307,27 @@ function Incidencias() {
                 <dd>{fechaHora(detalle.created_at)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Primera respuesta</dt>
-                <dd>{fechaHora(detalle.primera_respuesta_at)}</dd>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Recibida por</dt>
+                <dd>
+                  {detalle.recepcion
+                    ? `${detalle.recepcion.nombre ?? "Supervisor"} · ${detalle.recepcion.area ?? "—"} · ${fechaHora(detalle.recepcion.at)}`
+                    : "Pendiente de recepción"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Tiempo hasta recepción</dt>
+                <dd>
+                  {detalle.recepcion
+                    ? `${Math.max(0, Math.round((new Date(detalle.recepcion.at).getTime() - new Date(detalle.created_at).getTime()) / 60000))} min`
+                    : "—"}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Resolución</dt>
                 <dd>{fechaHora(detalle.resuelta_at)}</dd>
               </div>
             </dl>
+
 
             <h3 className="mt-6 font-display text-lg">Trazabilidad</h3>
             <div className="mt-3">

@@ -799,6 +799,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      actualizar_estado_incidencia: {
+        Args: {
+          _estado: Database["public"]["Enums"]["estado_incidencia"]
+          _incident_id: string
+        }
+        Returns: undefined
+      }
       area_usuario: { Args: { _user_id: string }; Returns: string }
       es_gerencia: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
@@ -810,6 +817,7 @@ export type Database = {
       }
       puede_ver_vip: { Args: { _user_id: string }; Returns: boolean }
       rango_autoridad: { Args: { _user_id: string }; Returns: number }
+      tomar_incidencia: { Args: { _incident_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "gerente" | "supervisor" | "colaborador"

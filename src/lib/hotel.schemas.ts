@@ -29,10 +29,9 @@ export const incidenciaCrearSchema = z.object({
 
 export const incidenciaActualizarSchema = z.object({
   id: z.string().uuid(),
-  estado: estadoIncidenciaEnum.optional(),
-  prioridad: prioridadEnum.optional(),
-  asignado_a: z.string().uuid().nullable().optional(),
+  estado: estadoIncidenciaEnum,
 });
+
 
 export const turnoCrearSchema = z.object({
   turno: z.string().trim().min(3).max(30),
