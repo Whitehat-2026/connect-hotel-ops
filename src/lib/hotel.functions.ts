@@ -65,7 +65,14 @@ export const listarIncidencias = createServerFn({ method: "GET" })
         "incident_id",
         filas.map((f) => f.id),
       );
-    const ids = [...new Set((recepciones ?? []).map((r) => r.actor_id).filter(Boolean))] as string[];
+    const ids = [
+      ...new Set(
+        [
+          ...(recepciones ?? []).map((r) => r.actor_id),
+          ...filas.map((f) => f.created_by),
+        ].filter(Boolean),
+      ),
+    ] as string[];
     const perfiles = ids.length
       ? (
           await context.supabase
@@ -80,6 +87,7 @@ export const listarIncidencias = createServerFn({ method: "GET" })
       const perfil = rec ? perfiles.find((p) => p.id === rec.actor_id) : undefined;
       return {
         ...f,
+        reportante: perfiles.find((p) => p.id === f.created_by)?.nombre ?? null,
         recepcion: rec
           ? {
               at: rec.created_at,
@@ -88,6 +96,7 @@ export const listarIncidencias = createServerFn({ method: "GET" })
             }
           : null,
       };
+
     });
   });
 
