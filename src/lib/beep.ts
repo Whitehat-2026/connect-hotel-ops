@@ -1,11 +1,10 @@
 /**
  * Único sistema de audio de la aplicación: un AudioContext compartido que se
- * desbloquea durante el primer gesto real del usuario (requisito de las
- * políticas de autoplay). Sin él, el contexto creado más tarde queda
- * "suspended" y el aviso nunca suena.
+ * desbloquea con el primer gesto real del usuario (requisito de las políticas
+ * de autoplay). Los escuchas se registran desde la raíz de la app, antes del
+ * login, para que el propio clic de ingreso sirva de desbloqueo.
  */
 let ctx: AudioContext | null = null;
-let desbloqueado = false;
 let escuchando = false;
 
 function crearContexto(): AudioContext | null {
@@ -26,25 +25,28 @@ export function prepararAudio() {
   const activar = () => {
     const c = crearContexto();
     if (!c) return;
-    void c.resume().then(() => {
-      desbloqueado = c.state === "running";
-    });
+    if (c.state !== "running") void c.resume().catch(() => undefined);
   };
-  window.addEventListener("pointerdown", activar);
-  window.addEventListener("keydown", activar);
-  window.addEventListener("touchstart", activar);
+  window.addEventListener("pointerdown", activar, { capture: true });
+  window.addEventListener("keydown", activar, { capture: true });
+  window.addEventListener("touchstart", activar, { capture: true });
+  window.addEventListener("click", activar, { capture: true });
 }
 
+/** El audio se considera disponible si existe un contexto reanudable. */
 export function audioHabilitado() {
-  return desbloqueado;
+  return ctx !== null;
 }
 
-/** Aviso breve y discreto. No hace nada si el usuario aún no interactuó. */
-export function beep() {
+/** Aviso breve y discreto. Reanuda el contexto si quedó suspendido. */
+export async function beep() {
   const c = ctx;
-  if (!c || !desbloqueado) return;
+  if (!c) return;
   try {
-    if (c.state === "suspended") void c.resume();
+    if (c.state === "suspended") {
+      await c.resume().catch(() => undefined);
+    }
+    if (c.state !== "running") return;
     const osc = c.createOscillator();
     const gain = c.createGain();
     osc.type = "sine";
