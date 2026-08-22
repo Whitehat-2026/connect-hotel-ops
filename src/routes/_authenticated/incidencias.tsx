@@ -15,7 +15,9 @@ import {
   crearIncidencia,
   listarEventosIncidencia,
   listarIncidencias,
+  tomarIncidencia,
 } from "@/lib/hotel.functions";
+
 import { incidenciaCrearSchema } from "@/lib/hotel.schemas";
 
 
