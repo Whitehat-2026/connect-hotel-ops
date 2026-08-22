@@ -24,23 +24,25 @@ export const Route = createFileRoute("/_authenticated/turnos")({
 });
 
 function Turnos() {
-  const { sesion, puedeVerVip } = useSesion();
+  const { sesion, puedeVerVip, tieneRol } = useSesion();
   const qc = useQueryClient();
   const listar = useServerFn(listarTurnos);
   const crear = useServerFn(crearTurno);
   const firmar = useServerFn(firmarTurno);
   const [form, setForm] = useState({
-    area_id: "",
     turno: "Matutino",
     pendientes: "",
     vips: "",
     incidencias_abiertas: "",
     notas: "",
-    firma_entrega: "",
   });
-  const [firmas, setFirmas] = useState<Record<string, string>>({});
 
   const pendientesValidos = form.pendientes.trim().length > 0;
+  const esOperativo = tieneRol("colaborador", "supervisor") && !tieneRol("gerente", "admin");
+  const miArea = sesion?.perfil?.area_id ?? null;
+  const miNombre = sesion?.perfil?.nombre ?? "—";
+  const nombreMiArea =
+    (sesion?.areas ?? []).find((a) => a.id === miArea)?.nombre ?? "Sin área asignada";
 
   const { data = [] } = useQuery({ queryKey: ["turnos"], queryFn: () => listar() });
 
@@ -48,16 +50,16 @@ function Turnos() {
     mutationFn: (input: unknown) => crear({ data: input as never }),
     onSuccess: () => {
       toast.success("Turno entregado");
-      setForm({ area_id: "", turno: "Matutino", pendientes: "", vips: "", incidencias_abiertas: "", notas: "", firma_entrega: "" });
+      setForm({ turno: "Matutino", pendientes: "", vips: "", incidencias_abiertas: "", notas: "" });
       qc.invalidateQueries({ queryKey: ["turnos"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const mFirmar = useMutation({
-    mutationFn: (input: { id: string; firma_recepcion: string }) => firmar({ data: input as never }),
+    mutationFn: (input: { id: string }) => firmar({ data: input as never }),
     onSuccess: () => {
-      toast.success("Turno recibido y firmado");
+      toast.success("Recepción confirmada");
       qc.invalidateQueries({ queryKey: ["turnos"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -67,12 +69,10 @@ function Turnos() {
     e.preventDefault();
     const parsed = turnoCrearSchema.safeParse({
       ...form,
-      area_id: form.area_id || null,
       pendientes: form.pendientes,
       vips: form.vips || undefined,
       incidencias_abiertas: form.incidencias_abiertas || undefined,
       notas: form.notas || undefined,
-      firma_entrega: form.firma_entrega || undefined,
     });
     if (!pendientesValidos) {
       toast.error("Indique los pendientes del turno antes de realizar la entrega.");
