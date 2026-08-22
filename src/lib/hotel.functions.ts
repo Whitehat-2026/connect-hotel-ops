@@ -166,26 +166,90 @@ export const listarTurnos = createServerFn({ method: "GET" })
   });
 
 
+/**
+ * Entrega de turno: identidad y área tomadas de la sesión autenticada.
+ * El usuario no puede elegir área ni escribir la firma de entrega.
+ */
 export const crearTurno = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => turnoCrearSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("shift_handovers")
-      .insert(limpiar({ ...data, created_by: context.userId, entregado_por: context.userId }));
+    const { supabase, userId } = context;
+    const { data: perfil } = await supabase
+      .from("profiles")
+      .select("nombre, area_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!perfil?.area_id)
+      throw new Error("Su perfil no tiene un área asignada; no puede entregar turnos.");
+
+    const roles = (
+      (await supabase.from("user_roles").select("role").eq("user_id", userId)).data ?? []
+    ).map((r) => r.role);
+    if (!roles.some((r) => r === "colaborador" || r === "supervisor"))
+      throw new Error("Sólo el personal operativo (Colaborador o Supervisor) entrega turnos.");
+
+    const { error } = await supabase.from("shift_handovers").insert(
+      limpiar({
+        ...data,
+        area_id: perfil.area_id,
+        firma_entrega: perfil.nombre,
+        created_by: userId,
+        entregado_por: userId,
+      }),
+    );
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
+/**
+ * Recepción de turno: validada íntegramente en servidor. Sólo personal
+ * operativo activo de la misma área, distinto de quien entregó y sobre un
+ * turno aún sin receptor.
+ */
 export const firmarTurno = createServerFn({ method: "POST" })
   .middleware([requireUsuarioActivo])
   .inputValidator((input: unknown) => turnoFirmarSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { supabase, userId } = context;
+
+    const { data: perfil } = await supabase
+      .from("profiles")
+      .select("nombre, area_id, activo")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!perfil?.activo) throw new Error("Usuario desactivado. Contacte con Administración.");
+
+    const roles = (
+      (await supabase.from("user_roles").select("role").eq("user_id", userId)).data ?? []
+    ).map((r) => r.role);
+    if (roles.some((r) => r === "gerente" || r === "admin"))
+      throw new Error("Gerencia y Administración supervisan turnos, pero no firman su recepción.");
+    if (!roles.some((r) => r === "colaborador" || r === "supervisor"))
+      throw new Error("Sólo el personal operativo puede confirmar la recepción de un turno.");
+
+    const { data: turno, error: errorTurno } = await supabase
       .from("shift_handovers")
-      .update({ firma_recepcion: data.firma_recepcion, recibido_por: context.userId })
-      .eq("id", data.id);
+      .select("id, area_id, entregado_por, created_by, recibido_por")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (errorTurno) throw new Error(errorTurno.message);
+    if (!turno) throw new Error("El turno no está disponible para recepción.");
+    if (turno.recibido_por) throw new Error("Este turno ya fue recibido.");
+    if (turno.entregado_por === userId || turno.created_by === userId)
+      throw new Error("No puede recibir un turno que usted mismo entregó.");
+    if (!turno.area_id || turno.area_id !== perfil.area_id)
+      throw new Error("Sólo un integrante del área del turno puede confirmar la recepción.");
+
+    const { data: actualizado, error } = await supabase
+      .from("shift_handovers")
+      .update({ firma_recepcion: perfil.nombre, recibido_por: userId })
+      .eq("id", data.id)
+      .is("recibido_por", null)
+      .select("id");
     if (error) throw new Error(error.message);
+    if (!actualizado || actualizado.length === 0)
+      throw new Error("No se pudo registrar la recepción de este turno.");
     return { ok: true };
   });
 

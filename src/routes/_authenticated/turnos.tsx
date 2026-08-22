@@ -24,23 +24,25 @@ export const Route = createFileRoute("/_authenticated/turnos")({
 });
 
 function Turnos() {
-  const { sesion, puedeVerVip } = useSesion();
+  const { sesion, puedeVerVip, tieneRol } = useSesion();
   const qc = useQueryClient();
   const listar = useServerFn(listarTurnos);
   const crear = useServerFn(crearTurno);
   const firmar = useServerFn(firmarTurno);
   const [form, setForm] = useState({
-    area_id: "",
     turno: "Matutino",
     pendientes: "",
     vips: "",
     incidencias_abiertas: "",
     notas: "",
-    firma_entrega: "",
   });
-  const [firmas, setFirmas] = useState<Record<string, string>>({});
 
   const pendientesValidos = form.pendientes.trim().length > 0;
+  const esOperativo = tieneRol("colaborador", "supervisor") && !tieneRol("gerente", "admin");
+  const miArea = sesion?.perfil?.area_id ?? null;
+  const miNombre = sesion?.perfil?.nombre ?? "—";
+  const nombreMiArea =
+    (sesion?.areas ?? []).find((a) => a.id === miArea)?.nombre ?? "Sin área asignada";
 
   const { data = [] } = useQuery({ queryKey: ["turnos"], queryFn: () => listar() });
 
@@ -48,16 +50,16 @@ function Turnos() {
     mutationFn: (input: unknown) => crear({ data: input as never }),
     onSuccess: () => {
       toast.success("Turno entregado");
-      setForm({ area_id: "", turno: "Matutino", pendientes: "", vips: "", incidencias_abiertas: "", notas: "", firma_entrega: "" });
+      setForm({ turno: "Matutino", pendientes: "", vips: "", incidencias_abiertas: "", notas: "" });
       qc.invalidateQueries({ queryKey: ["turnos"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const mFirmar = useMutation({
-    mutationFn: (input: { id: string; firma_recepcion: string }) => firmar({ data: input as never }),
+    mutationFn: (input: { id: string }) => firmar({ data: input as never }),
     onSuccess: () => {
-      toast.success("Turno recibido y firmado");
+      toast.success("Recepción confirmada");
       qc.invalidateQueries({ queryKey: ["turnos"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -67,12 +69,10 @@ function Turnos() {
     e.preventDefault();
     const parsed = turnoCrearSchema.safeParse({
       ...form,
-      area_id: form.area_id || null,
       pendientes: form.pendientes,
       vips: form.vips || undefined,
       incidencias_abiertas: form.incidencias_abiertas || undefined,
       notas: form.notas || undefined,
-      firma_entrega: form.firma_entrega || undefined,
     });
     if (!pendientesValidos) {
       toast.error("Indique los pendientes del turno antes de realizar la entrega.");
@@ -89,13 +89,16 @@ function Turnos() {
     <div>
       <PageHeader titulo="Entrega de turno" descripcion="Bitácora digital con firma de entrega y recepción." />
 
+      {!esOperativo ? (
+        <p className="surface mb-8 p-5 text-sm text-muted-foreground">
+          Vista de supervisión: puede consultar todas las entregas de turno, pero la entrega y la
+          recepción corresponden al personal operativo del área.
+        </p>
+      ) : (
       <form onSubmit={enviar} className="surface mb-8 grid gap-3 p-5 md:grid-cols-2">
-        <select className="field" value={form.area_id} onChange={(e) => setForm({ ...form, area_id: e.target.value })}>
-          <option value="">Área</option>
-          {(sesion?.areas ?? []).map((a) => (
-            <option key={a.id} value={a.id}>{a.nombre}</option>
-          ))}
-        </select>
+        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground md:col-span-2">
+          Entrega: <span className="text-foreground">{miNombre}</span> · {nombreMiArea}
+        </p>
         <select className="field" value={form.turno} onChange={(e) => setForm({ ...form, turno: e.target.value })}>
           {["Matutino", "Vespertino", "Nocturno"].map((t) => (
             <option key={t} value={t}>{t}</option>
@@ -121,7 +124,6 @@ function Turnos() {
         <textarea className="field" rows={3} placeholder={puedeVerVip ? "VIPs y atenciones especiales" : "Atenciones especiales del turno (sin datos identificativos de huéspedes)"} value={form.vips} onChange={(e) => setForm({ ...form, vips: e.target.value })} maxLength={2000} />
         <textarea className="field" rows={3} placeholder="Incidencias abiertas" value={form.incidencias_abiertas} onChange={(e) => setForm({ ...form, incidencias_abiertas: e.target.value })} maxLength={2000} />
         <textarea className="field" rows={3} placeholder="Notas adicionales" value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} maxLength={2000} />
-        <input className="field" placeholder="Firma de quien entrega (nombre completo)" value={form.firma_entrega} onChange={(e) => setForm({ ...form, firma_entrega: e.target.value })} maxLength={120} />
         <button
           className="btn-gold hover:btn-gold-hover px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
           disabled={mCrear.isPending || !pendientesValidos}
@@ -129,6 +131,7 @@ function Turnos() {
           {mCrear.isPending ? "Guardando…" : "Entregar turno"}
         </button>
       </form>
+      )}
 
       {data.length === 0 ? (
         <EmptyState titulo="Sin entregas registradas" descripcion="Las entregas de turno aparecerán aquí en orden cronológico." />
@@ -175,30 +178,28 @@ function Turnos() {
                     Recibido por {t.firma_recepcion} ·{" "}
                     {fechaHora(t.updated_at)}
                   </p>
-                ) : (
-                  <div className="mt-2 flex gap-2">
-                    <input
-                      className="field flex-1 py-1 text-xs"
-                      placeholder="Tu nombre para firmar recepción"
-                      value={firmas[t.id] ?? ""}
-                      onChange={(e) => setFirmas({ ...firmas, [t.id]: e.target.value })}
-                      maxLength={120}
-                    />
+                ) : esOperativo &&
+                  miArea &&
+                  t.area_id === miArea &&
+                  t.entregado_por !== sesion?.userId &&
+                  t.created_by !== sesion?.userId ? (
+                  <div className="mt-2">
                     <button
                       type="button"
-                      className="btn-gold hover:btn-gold-hover px-3 py-1 text-xs"
-                      onClick={() => {
-                        const firma = (firmas[t.id] ?? "").trim();
-                        if (firma.length < 2) {
-                          toast.error("Escribe tu nombre para firmar");
-                          return;
-                        }
-                        mFirmar.mutate({ id: t.id, firma_recepcion: firma });
-                      }}
+                      className="btn-gold hover:btn-gold-hover px-3 py-1 text-xs disabled:opacity-40"
+                      disabled={mFirmar.isPending}
+                      onClick={() => mFirmar.mutate({ id: t.id })}
                     >
-                      Firmar
+                      Confirmar recepción
                     </button>
                   </div>
+                ) : (
+                  <p className="mt-1 text-xs text-warning">
+                    {esOperativo &&
+                    (t.entregado_por === sesion?.userId || t.created_by === sesion?.userId)
+                      ? "Pendiente de recepción por otro integrante del área"
+                      : "Pendiente de recepción"}
+                  </p>
                 )}
               </div>
             </article>
