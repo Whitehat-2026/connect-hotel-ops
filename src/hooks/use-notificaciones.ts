@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useRouterState } from "@tanstack/react-router";
 import { contarNotificaciones, marcarModuloVisto } from "@/lib/hotel.functions";
 import { audioHabilitado, beep, prepararAudio } from "@/lib/beep";
+import { useSesion } from "@/hooks/use-sesion";
 
 export type Modulo = "incidencias" | "pedidos" | "comunicados" | "turnos" | "administracion";
 
@@ -15,7 +16,11 @@ const rutaModulo: Record<string, Modulo> = {
   "/admin": "administracion",
 };
 
-/** Línea base de contadores, fuera del componente para sobrevivir remontajes. */
+/**
+ * Línea base de contadores por usuario, fuera del componente para sobrevivir
+ * remontajes. Al cambiar de usuario (o cerrar sesión) se descarta la anterior.
+ */
+let previoUsuario: string | null = null;
 let previoGlobal: Record<Modulo, number> | null = null;
 
 export function useNotificaciones() {
@@ -23,6 +28,8 @@ export function useNotificaciones() {
   const marcar = useServerFn(marcarModuloVisto);
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { sesion } = useSesion();
+  const userId = sesion?.userId ?? null;
 
   useEffect(() => {
     prepararAudio();
@@ -36,15 +43,19 @@ export function useNotificaciones() {
   });
 
   useEffect(() => {
-    if (!data) return;
+    if (!data || !userId) return;
     const actual = data as Record<Modulo, number>;
-    const anterior = previoGlobal;
+    const mismoUsuario = previoUsuario === userId;
+    const anterior = mismoUsuario ? previoGlobal : null;
+    // La línea base se actualiza siempre y de inmediato: una misma novedad
+    // nunca vuelve a sonar en pollings posteriores.
+    previoUsuario = userId;
     previoGlobal = actual;
     if (!anterior || !audioHabilitado()) return;
     const hayNuevas = (Object.keys(actual) as Modulo[]).some((m) => actual[m] > (anterior[m] ?? 0));
-    if (hayNuevas) beep();
-  }, [data]);
-
+    // Un solo beep aunque aumenten varios módulos a la vez.
+    if (hayNuevas) void beep();
+  }, [data, userId]);
 
   const mMarcar = useMutation({
     mutationFn: (modulo: Modulo) => marcar({ data: { modulo } as never }),
