@@ -89,13 +89,16 @@ function Turnos() {
     <div>
       <PageHeader titulo="Entrega de turno" descripcion="Bitácora digital con firma de entrega y recepción." />
 
+      {!esOperativo ? (
+        <p className="surface mb-8 p-5 text-sm text-muted-foreground">
+          Vista de supervisión: puede consultar todas las entregas de turno, pero la entrega y la
+          recepción corresponden al personal operativo del área.
+        </p>
+      ) : (
       <form onSubmit={enviar} className="surface mb-8 grid gap-3 p-5 md:grid-cols-2">
-        <select className="field" value={form.area_id} onChange={(e) => setForm({ ...form, area_id: e.target.value })}>
-          <option value="">Área</option>
-          {(sesion?.areas ?? []).map((a) => (
-            <option key={a.id} value={a.id}>{a.nombre}</option>
-          ))}
-        </select>
+        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground md:col-span-2">
+          Entrega: <span className="text-foreground">{miNombre}</span> · {nombreMiArea}
+        </p>
         <select className="field" value={form.turno} onChange={(e) => setForm({ ...form, turno: e.target.value })}>
           {["Matutino", "Vespertino", "Nocturno"].map((t) => (
             <option key={t} value={t}>{t}</option>
