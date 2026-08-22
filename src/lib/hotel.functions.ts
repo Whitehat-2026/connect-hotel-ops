@@ -53,8 +53,44 @@ export const listarIncidencias = createServerFn({ method: "GET" })
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const filas = data ?? [];
+    if (filas.length === 0) return [];
+
+    // Recepción formal: sólo cuenta si existe el evento tipo 'recibida'.
+    const { data: recepciones } = await context.supabase
+      .from("incident_events")
+      .select("incident_id, actor_id, created_at")
+      .eq("tipo", "recibida")
+      .in(
+        "incident_id",
+        filas.map((f) => f.id),
+      );
+    const ids = [...new Set((recepciones ?? []).map((r) => r.actor_id).filter(Boolean))] as string[];
+    const perfiles = ids.length
+      ? (
+          await context.supabase
+            .from("profiles")
+            .select("id, nombre, areas:areas(nombre)")
+            .in("id", ids)
+        ).data ?? []
+      : [];
+
+    return filas.map((f) => {
+      const rec = (recepciones ?? []).find((r) => r.incident_id === f.id) ?? null;
+      const perfil = rec ? perfiles.find((p) => p.id === rec.actor_id) : undefined;
+      return {
+        ...f,
+        recepcion: rec
+          ? {
+              at: rec.created_at,
+              nombre: perfil?.nombre ?? null,
+              area: (perfil as { areas?: { nombre?: string } | null } | undefined)?.areas?.nombre ?? null,
+            }
+          : null,
+      };
+    });
   });
+
 
 export const listarEventosIncidencia = createServerFn({ method: "GET" })
   .middleware([requireUsuarioActivo])
