@@ -124,7 +124,6 @@ function Turnos() {
         <textarea className="field" rows={3} placeholder={puedeVerVip ? "VIPs y atenciones especiales" : "Atenciones especiales del turno (sin datos identificativos de huéspedes)"} value={form.vips} onChange={(e) => setForm({ ...form, vips: e.target.value })} maxLength={2000} />
         <textarea className="field" rows={3} placeholder="Incidencias abiertas" value={form.incidencias_abiertas} onChange={(e) => setForm({ ...form, incidencias_abiertas: e.target.value })} maxLength={2000} />
         <textarea className="field" rows={3} placeholder="Notas adicionales" value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} maxLength={2000} />
-        <input className="field" placeholder="Firma de quien entrega (nombre completo)" value={form.firma_entrega} onChange={(e) => setForm({ ...form, firma_entrega: e.target.value })} maxLength={120} />
         <button
           className="btn-gold hover:btn-gold-hover px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
           disabled={mCrear.isPending || !pendientesValidos}
@@ -132,6 +131,7 @@ function Turnos() {
           {mCrear.isPending ? "Guardando…" : "Entregar turno"}
         </button>
       </form>
+      )}
 
       {data.length === 0 ? (
         <EmptyState titulo="Sin entregas registradas" descripcion="Las entregas de turno aparecerán aquí en orden cronológico." />
