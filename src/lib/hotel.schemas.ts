@@ -35,7 +35,6 @@ export const incidenciaActualizarSchema = z.object({
 });
 
 export const turnoCrearSchema = z.object({
-  area_id: z.string().uuid().nullable().optional(),
   turno: z.string().trim().min(3).max(30),
   pendientes: z
     .string()
@@ -45,12 +44,10 @@ export const turnoCrearSchema = z.object({
   vips: z.string().trim().max(2000).optional(),
   incidencias_abiertas: z.string().trim().max(2000).optional(),
   notas: z.string().trim().max(2000).optional(),
-  firma_entrega: z.string().trim().max(120).optional(),
 });
 
 export const turnoFirmarSchema = z.object({
   id: z.string().uuid(),
-  firma_recepcion: z.string().trim().min(2).max(120),
 });
 
 export const comunicadoCrearSchema = z.object({
