@@ -178,30 +178,28 @@ function Turnos() {
                     Recibido por {t.firma_recepcion} ·{" "}
                     {fechaHora(t.updated_at)}
                   </p>
-                ) : (
-                  <div className="mt-2 flex gap-2">
-                    <input
-                      className="field flex-1 py-1 text-xs"
-                      placeholder="Tu nombre para firmar recepción"
-                      value={firmas[t.id] ?? ""}
-                      onChange={(e) => setFirmas({ ...firmas, [t.id]: e.target.value })}
-                      maxLength={120}
-                    />
+                ) : esOperativo &&
+                  miArea &&
+                  t.area_id === miArea &&
+                  t.entregado_por !== sesion?.userId &&
+                  t.created_by !== sesion?.userId ? (
+                  <div className="mt-2">
                     <button
                       type="button"
-                      className="btn-gold hover:btn-gold-hover px-3 py-1 text-xs"
-                      onClick={() => {
-                        const firma = (firmas[t.id] ?? "").trim();
-                        if (firma.length < 2) {
-                          toast.error("Escribe tu nombre para firmar");
-                          return;
-                        }
-                        mFirmar.mutate({ id: t.id, firma_recepcion: firma });
-                      }}
+                      className="btn-gold hover:btn-gold-hover px-3 py-1 text-xs disabled:opacity-40"
+                      disabled={mFirmar.isPending}
+                      onClick={() => mFirmar.mutate({ id: t.id })}
                     >
-                      Firmar
+                      Confirmar recepción
                     </button>
                   </div>
+                ) : (
+                  <p className="mt-1 text-xs text-warning">
+                    {esOperativo &&
+                    (t.entregado_por === sesion?.userId || t.created_by === sesion?.userId)
+                      ? "Pendiente de recepción por otro integrante del área"
+                      : "Pendiente de recepción"}
+                  </p>
                 )}
               </div>
             </article>
